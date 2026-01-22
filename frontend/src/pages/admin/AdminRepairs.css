@@ -1,0 +1,91 @@
+.header-actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.header-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* Repairs Table Container */
+.repairs-table-container {
+    background: var(--color-bg-card);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.repairs-table {
+    width: 100%;
+}
+
+.repairs-table th {
+    white-space: nowrap;
+}
+
+.repairs-table .ticket-number {
+    font-family: monospace;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.client-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.client-name {
+    font-weight: 500;
+}
+
+.client-email {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.cost-cell {
+    font-weight: 600;
+    color: var(--color-success);
+}
+
+.date-cell {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--color-bg-secondary);
+}
+
+.page-info {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .repairs-table-container {
+        overflow-x: auto;
+    }
+
+    .repairs-table {
+        min-width: 800px;
+    }
+}

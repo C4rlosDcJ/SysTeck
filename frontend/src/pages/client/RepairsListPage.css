@@ -1,0 +1,165 @@
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.page-header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+}
+
+.page-header .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* Filters */
+.filters-bar {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+}
+
+.search-box .input {
+    padding-left: 45px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-text-muted);
+}
+
+.filter-group .select {
+    min-width: 200px;
+}
+
+/* Repairs container */
+.repairs-container {
+    background: var(--color-bg-card);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.repairs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Repair Card Full */
+.repair-card-full {
+    background: var(--color-bg-input);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--color-bg-secondary);
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.repair-card-full:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.repair-card-full .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--color-bg-secondary);
+}
+
+.repair-card-full .card-body {
+    padding: var(--spacing-md);
+}
+
+.repair-card-full h3 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-xs);
+}
+
+.device-info {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.problem-excerpt {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    margin-bottom: var(--spacing-md);
+}
+
+.card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.meta-cost {
+    font-weight: 600;
+    color: var(--color-success);
+}
+
+.card-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+    background: rgba(218, 0, 55, 0.1);
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    border-top: 1px solid var(--color-bg-secondary);
+    transition: all var(--transition-fast);
+}
+
+.card-action:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filters-bar {
+        flex-direction: column;
+    }
+
+    .search-box,
+    .filter-group {
+        width: 100%;
+    }
+
+    .filter-group .select {
+        flex: 1;
+    }
+
+    .repairs-grid {
+        grid-template-columns: 1fr;
+    }
+}
