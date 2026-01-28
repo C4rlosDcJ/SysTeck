@@ -21,6 +21,7 @@ export default function AdminCustomers() {
 
     useEffect(() => {
         fetchCustomers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page]);
 
     const fetchCustomers = async () => {

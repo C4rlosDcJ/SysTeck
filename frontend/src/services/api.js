@@ -75,9 +75,9 @@ export const repairService = {
         body: JSON.stringify(data)
     }),
 
-    updateStatus: (id, status, notes) => fetchAPI(`/repairs/${id}/status`, {
+    updateStatus: (id, status, notes, estimated_delivery = null, signature = null) => fetchAPI(`/repairs/${id}/status`, {
         method: 'PUT',
-        body: JSON.stringify({ status, notes })
+        body: JSON.stringify({ status, notes, estimated_delivery, signature })
     }),
 
     addNote: (id, note, isInternal = false) => fetchAPI(`/repairs/${id}/notes`, {

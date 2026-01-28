@@ -220,6 +220,7 @@ exports.create = async (req, res) => {
         warrantyExpires.setDate(warrantyExpires.getDate() + (warranty_days || 30));
 
         const [result] = await db.query(`
+      INSERT INTO repairs (
         ticket_number, customer_id, device_type_id, brand_id, brand_other, model, color,
         storage_capacity, serial_number, imei, device_password, accessories_received,
         physical_condition, existing_damage, function_checklist, problem_description,
@@ -322,6 +323,21 @@ exports.update = async (req, res) => {
         values.push(id);
         await db.query(`UPDATE repairs SET ${setClauses.join(', ')} WHERE id = ?`, values);
 
+        // Notificar cambio de fecha de entrega si cambió
+        if (updates.estimated_delivery && updates.estimated_delivery !== existing[0].estimated_delivery) {
+            const [customer] = await db.query('SELECT email, first_name FROM users WHERE id = ?', [existing[0].customer_id]);
+            if (customer.length > 0 && customer[0].email) {
+                await sendEmail(customer[0].email, 'deliveryRescheduled', {
+                    repair: {
+                        ticket_number: existing[0].ticket_number,
+                        model: existing[0].model,
+                        estimated_delivery: updates.estimated_delivery
+                    },
+                    customer: customer[0]
+                });
+            }
+        }
+
         res.json({ message: 'Reparación actualizada exitosamente.' });
     } catch (error) {
         console.error('[REPAIRS] Error al actualizar reparación:', error);
@@ -333,7 +349,7 @@ exports.update = async (req, res) => {
 exports.updateStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, notes } = req.body;
+        const { status, notes, estimated_delivery } = req.body;
 
         const validStatuses = [
             'received', 'diagnosing', 'waiting_approval', 'waiting_parts',
@@ -358,9 +374,52 @@ exports.updateStatus = async (req, res) => {
 
         const repair = existing[0];
 
+        // Validar permisos si el usuario es cliente
+        if (req.user.role === 'client') {
+            // Verificar que la reparación le pertenece
+            if (repair.customer_id !== req.user.id) {
+                return res.status(403).json({ message: 'No tienes permiso para modificar esta reparación.' });
+            }
+
+            // Caso 1: Aprobación de cotización
+            if (repair.status === 'waiting_approval') {
+                if (status !== 'repairing' && status !== 'cancelled') {
+                    return res.status(400).json({ message: 'Acción no permitida.' });
+                }
+            }
+            // Caso 2: Agendar recolección cuando está listo
+            else if (repair.status === 'ready') {
+                if (status !== 'ready') {
+                    return res.status(400).json({ message: 'No puedes cambiar el estado de una reparación lista.' });
+                }
+                // Si está en ready y envía status 'ready', es para agendar fecha, permitimos continuar
+            } else {
+                return res.status(400).json({ message: 'No puedes modificar el estado de esta reparación.' });
+            }
+        }
+
         // Actualizar estado
         let updateQuery = 'UPDATE repairs SET status = ?';
         const updateParams = [status];
+
+        // Si se proporciona fecha de entrega y es válida (cliente o admin)
+        if (estimated_delivery) {
+            updateQuery += ', estimated_delivery = ?';
+            updateParams.push(estimated_delivery);
+        }
+
+        // Si se proporciona firma (base64)
+        if (req.body.signature) {
+            if (status === 'repairing') {
+                updateQuery += ', signature_approval = ?';
+                updateParams.push(req.body.signature);
+            } else if (status === 'delivered') {
+                updateQuery += ', signature_delivery = ?';
+                updateParams.push(req.body.signature);
+            }
+        }
+
+        // Agregar timestamps según el estado
 
         // Agregar timestamps según el estado
         if (status === 'repairing' && !repair.started_at) {
@@ -377,20 +436,37 @@ exports.updateStatus = async (req, res) => {
 
         await db.query(updateQuery, updateParams);
 
-        // Registrar en historial
-        await db.query(
-            'INSERT INTO repair_status_history (repair_id, status, notes, changed_by) VALUES (?, ?, ?, ?)',
-            [id, status, notes || null, req.user.id]
-        );
+        // Registrar en historial si cambió el estado o si es cliente agendando
+        if (status !== repair.status || (req.user.role === 'client' && estimated_delivery)) {
+            await db.query(
+                'INSERT INTO repair_status_history (repair_id, status, notes, changed_by) VALUES (?, ?, ?, ?)',
+                [id, status, notes || (estimated_delivery ? 'Fecha de entrega/recolección actualizada' : null), req.user.id]
+            );
+        }
 
         // Enviar email de notificación
         if (repair.email) {
-            const template = status === 'ready' ? 'repairReady' : 'statusChanged';
-            await sendEmail(repair.email, template, {
-                repair: { ticket_number: repair.ticket_number, model: repair.model, total_cost: repair.total_cost },
-                customer: { first_name: repair.first_name },
-                newStatus: status
-            });
+            // Si el cliente agendó fecha (estaba ready, sigue ready y hay fecha)
+            if (req.user.role === 'client' && status === 'ready' && estimated_delivery) {
+                // Notificar recepción de agendamiento
+                // TODO: Crear template pickupScheduled
+            } else if (status !== repair.status) {
+                let template = 'statusChanged';
+                if (status === 'ready') template = 'repairReady';
+                if (status === 'delivered') template = 'repairDelivered';
+
+                await sendEmail(repair.email, template, {
+                    repair: {
+                        ticket_number: repair.ticket_number,
+                        model: repair.model,
+                        total_cost: repair.total_cost,
+                        estimated_delivery: estimated_delivery || repair.estimated_delivery,
+                        warranty_days: repair.warranty_days
+                    },
+                    customer: { first_name: repair.first_name },
+                    newStatus: status
+                });
+            }
         }
 
         res.json({ message: 'Estado actualizado exitosamente.' });

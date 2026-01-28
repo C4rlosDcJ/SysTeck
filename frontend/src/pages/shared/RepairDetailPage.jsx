@@ -20,8 +20,12 @@ import {
     Image as ImageIcon,
     DollarSign,
     Save as SaveIcon,
-    ClipboardCheck
+    ClipboardCheck,
+    Printer,
+    PenTool
 } from 'lucide-react';
+import SignatureModal from '../../components/common/SignatureModal';
+import { generateServiceTicket } from '../../utils/pdfGenerator';
 import './RepairDetailPage.css';
 
 const statusLabels = {
@@ -36,17 +40,7 @@ const statusLabels = {
     cancelled: 'Cancelado'
 };
 
-const statusColors = {
-    received: '#2196F3',
-    diagnosing: '#9C27B0',
-    waiting_approval: '#FF9800',
-    waiting_parts: '#795548',
-    repairing: '#F44336',
-    quality_check: '#00BCD4',
-    ready: '#4CAF50',
-    delivered: '#8BC34A',
-    cancelled: '#9E9E9E'
-};
+// Status colors are managed via CSS classes .status-{status}
 
 export default function RepairDetailPage() {
     const { id } = useParams();
@@ -68,6 +62,13 @@ export default function RepairDetailPage() {
         discount: 0
     });
     const [isEditingCosts, setIsEditingCosts] = useState(false);
+    const [uploadingImages, setUploadingImages] = useState(false);
+
+    // Estados para firma
+    const [showSigModal, setShowSigModal] = useState(false);
+    const [sigType, setSigType] = useState(null); // 'approval' | 'delivery'
+
+    // Estados de edición admin
     const [isEditingTechnical, setIsEditingTechnical] = useState(false);
     const [technicalData, setTechnicalData] = useState({
         battery_health: '',
@@ -84,23 +85,44 @@ export default function RepairDetailPage() {
         serial_number: '',
         storage_capacity: '',
         device_password: '',
-        problem_description: ''
+        problem_description: '',
+        priority: 'normal',
+        service_requested: '',
+        estimated_delivery: ''
     });
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
-    // Form states for images
-    const [uploadingImages, setUploadingImages] = useState(false);
-    const [selectedFiles, setSelectedFiles] = useState([]);
+    // Form states for images (handled via dynamic import)
 
     // Form states for notes
     const [noteText, setNoteText] = useState('');
     const [isInternal, setIsInternal] = useState(false);
     const [addingNote, setAddingNote] = useState(false);
 
+    const [settings, setSettings] = useState({});
+
     useEffect(() => {
-        fetchRepairData();
-        fetchTechnicians();
+        const loadData = async () => {
+            await fetchRepairData();
+            await fetchTechnicians();
+            await fetchSettings();
+        };
+        loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
+
+    const fetchSettings = async () => {
+        try {
+            // Asumimos que hay un servicio settingsService disponible via api.js. 
+            // Si no está exportado globalmente, lo importamos.
+            // Verificamos si settingsService existe en el import de api.js
+            // En caso que no, usamos fetchAPI directo si es necesario, pero settingsService ya está en api.js
+            const data = await import('../../services/api').then(m => m.settingsService.getAll());
+            setSettings(data);
+        } catch (err) {
+            console.error('Error fetching settings:', err);
+        }
+    };
 
     const fetchTechnicians = async () => {
         try {
@@ -139,7 +161,10 @@ export default function RepairDetailPage() {
                 serial_number: data.serial_number || '',
                 storage_capacity: data.storage_capacity || '',
                 device_password: data.device_password || '',
-                problem_description: data.problem_description || ''
+                problem_description: data.problem_description || '',
+                priority: data.priority || 'normal',
+                service_requested: data.service_requested || '',
+                estimated_delivery: data.estimated_delivery ? data.estimated_delivery.split('T')[0] : ''
             });
             setError(null);
         } catch (err) {
@@ -147,6 +172,40 @@ export default function RepairDetailPage() {
             setError('No se pudo cargar la información de la reparación.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSignatureSave = async (signatureData) => {
+        setShowSigModal(false);
+        try {
+            setUpdatingStatus(true);
+            console.log('Sending signature data length:', signatureData.length);
+
+            if (sigType === 'approval') {
+                const notes = 'Cotización aprobada por el cliente con firma';
+                await repairService.updateStatus(id, 'repairing', notes, technicalData.estimated_delivery, signatureData);
+                alert('¡Reparación aprobada correctamente!');
+            } else if (sigType === 'delivery') {
+                await repairService.updateStatus(id, 'delivered', 'Equipo entregado al cliente', null, signatureData);
+                alert('¡Equipo entregado y garantía activada!');
+            }
+
+            await fetchRepairData();
+        } catch (err) {
+            console.error(err);
+            alert('Error al guardar firma: ' + err.message);
+        } finally {
+            setUpdatingStatus(false);
+        }
+    };
+
+    const handlePrintTicket = () => {
+        try {
+            // Pasamos settings al generador
+            generateServiceTicket(repair, settings);
+        } catch (error) {
+            console.error('Error generando PDF:', error);
+            alert('No se pudo generar el ticket. Por favor intenta de nuevo.');
         }
     };
 
@@ -162,10 +221,10 @@ export default function RepairDetailPage() {
             }
 
             if (isEditingCosts) {
-                updates.diagnosis_cost = costs.diagnosis_cost;
-                updates.labor_cost = costs.labor_cost;
-                updates.parts_cost = costs.parts_cost;
-                updates.discount = costs.discount;
+                updates.diagnosis_cost = Number(costs.diagnosis_cost) || 0;
+                updates.labor_cost = Number(costs.labor_cost) || 0;
+                updates.parts_cost = Number(costs.parts_cost) || 0;
+                updates.discount = Number(costs.discount) || 0;
             }
 
             if (isEditingTechnical) {
@@ -184,6 +243,9 @@ export default function RepairDetailPage() {
                 updates.storage_capacity = technicalData.storage_capacity;
                 updates.device_password = technicalData.device_password;
                 updates.problem_description = technicalData.problem_description;
+                updates.priority = technicalData.priority;
+                updates.service_requested = technicalData.service_requested;
+                updates.estimated_delivery = technicalData.estimated_delivery || null;
             }
 
             if (Object.keys(updates).length > 0) {
@@ -191,6 +253,16 @@ export default function RepairDetailPage() {
             }
 
             if (newStatus !== repair.status) {
+                if (newStatus === 'delivered') {
+                    setSigType('delivery');
+                    setShowSigModal(true);
+                    setIsEditingCosts(false);
+                    setIsEditingTechnical(false);
+                    setUpdatingStatus(false);
+                    await fetchRepairData();
+                    return;
+                }
+
                 await repairService.updateStatus(id, newStatus, statusNote);
                 setStatusNote('');
             }
@@ -211,7 +283,8 @@ export default function RepairDetailPage() {
 
         try {
             setUploadingImages(true);
-            await repairService.uploads.uploadImages(id, files, 'during');
+            const { uploadService } = await import('../../services/api');
+            await uploadService.uploadImages(id, files, 'during');
             await fetchRepairData();
         } catch (err) {
             alert('Error al subir imágenes: ' + err.message);
@@ -223,7 +296,8 @@ export default function RepairDetailPage() {
     const handleDeleteImage = async (imageId) => {
         if (!window.confirm('¿Estás seguro de eliminar esta imagen?')) return;
         try {
-            await repairService.uploads.deleteImage(imageId);
+            const { uploadService } = await import('../../services/api');
+            await uploadService.deleteImage(imageId);
             await fetchRepairData();
         } catch (err) {
             alert('Error al eliminar imagen: ' + err.message);
@@ -294,6 +368,11 @@ export default function RepairDetailPage() {
                     </button>
                     <div className="flex items-center gap-md">
                         <h1>Detalle de Reparación</h1>
+                        {(repair.status === 'ready' || repair.status === 'delivered') && (
+                            <button onClick={handlePrintTicket} className="btn btn-sm" title="Imprimir Ticket">
+                                <Printer size={18} />
+                            </button>
+                        )}
                         <span className={`status-badge status-${repair.status}`}>
                             {statusLabels[repair.status]}
                         </span>
@@ -339,12 +418,120 @@ export default function RepairDetailPage() {
                                 disabled={updatingStatus || (
                                     newStatus === repair.status &&
                                     parseInt(warrantyDays) === parseInt(repair.warranty_days) &&
-                                    !isEditingCosts
+                                    !isEditingCosts &&
+                                    !isEditingTechnical
                                 )}
                             >
-                                <SaveIcon size={16} /> {updatingStatus ? 'Guardando...' : 'Guardar Cambios Pagina'}
+                                <SaveIcon size={16} /> {updatingStatus ? 'Guardando...' : 'Guardar Cambios'}
                             </button>
                         </form>
+                    </div>
+                )}
+
+                {/* Notificación para aceptar cotización (SOLO CLIENTES) */}
+                {repair.status === 'waiting_approval' && !isAdmin && (
+                    <div className="approval-card detail-card">
+                        <div className="approval-header">
+                            <AlertCircle size={24} color="var(--color-warning)" />
+                            <h3>Cotización Pendiente de Aprobación</h3>
+                        </div>
+                        <div className="approval-content">
+                            <p>
+                                El costo total estimado para tu reparación es de <strong>{formatCurrency(repair.total_cost)}</strong>.
+                                Por favor revisa el detalle y confirma si deseas proceder.
+                            </p>
+
+                        </div>
+                        <div className="approval-actions">
+                            <button
+                                className="btn-approve"
+                                onClick={() => {
+                                    setSigType('approval');
+                                    setShowSigModal(true);
+                                }}
+                                disabled={updatingStatus}
+                            >
+                                <PenTool size={18} /> Firmar y Aprobar
+                            </button>
+                            <button
+                                className="btn-reject"
+                                onClick={async () => {
+                                    if (window.confirm('¿Estás seguro de rechazar esta cotización? La reparación será cancelada.')) {
+                                        try {
+                                            setUpdatingStatus(true);
+                                            await repairService.updateStatus(id, 'cancelled', 'Cotización rechazada por el cliente');
+                                            await fetchRepairData();
+                                        } catch (err) {
+                                            alert('Error: ' + err.message);
+                                        } finally {
+                                            setUpdatingStatus(false);
+                                        }
+                                    }
+                                }}
+                                disabled={updatingStatus}
+                            >
+                                <X size={18} /> Rechazar
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Agendamiento de Recolección (SOLO CLIENTES - Status Ready) */}
+                {repair.status === 'ready' && !isAdmin && (
+                    <div className="approval-card detail-card" style={{ borderLeftColor: '#4CAF50' }}>
+                        <div className="approval-header">
+                            <CheckCircle2 size={24} color="#4CAF50" />
+                            <h3 style={{ color: '#fff' }}>¡Tu equipo está listo!</h3>
+                        </div>
+                        <div className="approval-content">
+                            <p>
+                                Tu reparación ha sido completada exitosamente. Total a pagar: <strong>{formatCurrency(repair.total_cost - repair.advance_payment)}</strong>.
+                                <br />
+                                Por favor agenda el día que pasarás a recoger tu equipo.
+                            </p>
+                            <div className="mt-md">
+                                <label className="info-label block mb-xs" style={{ color: '#e0e0e0' }}>Día de recolección:</label>
+                                <div className="flex gap-sm items-end">
+                                    <input
+                                        type="date"
+                                        className="input"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.1)',
+                                            color: 'white',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            maxWidth: '200px'
+                                        }}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        value={technicalData.estimated_delivery ? technicalData.estimated_delivery.split('T')[0] : ''}
+                                        onChange={(e) => setTechnicalData(prev => ({ ...prev, estimated_delivery: e.target.value }))}
+                                    />
+                                    <button
+                                        className="btn btn-primary"
+                                        style={{ background: '#4CAF50', borderColor: '#4CAF50' }}
+                                        onClick={async () => {
+                                            if (!technicalData.estimated_delivery) {
+                                                alert('Por favor selecciona una fecha.');
+                                                return;
+                                            }
+                                            try {
+                                                setUpdatingStatus(true);
+                                                // Enviamos status 'ready' para confirmar la fecha sin cambiar estado
+                                                await repairService.updateStatus(id, 'ready', 'Cliente agendó recolección', technicalData.estimated_delivery);
+                                                await fetchRepairData();
+                                                alert('¡Cita agendada correctamente!');
+                                            } catch (err) {
+                                                alert('Error: ' + err.message);
+                                            } finally {
+                                                setUpdatingStatus(false);
+                                            }
+                                        }}
+                                        disabled={updatingStatus}
+                                    >
+                                        Agendar Cita
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </header>
@@ -360,10 +547,11 @@ export default function RepairDetailPage() {
                                     onClick={() => setIsEditingTechnical(!isEditingTechnical)}
                                     className="btn btn-ghost btn-sm"
                                 >
-                                    {isEditingTechnical ? 'Cancelar' : 'Editar Hallazgos'}
+                                    {isEditingTechnical ? 'Cancelar' : 'Editar Información'}
                                 </button>
                             )}
                         </div>
+                        {/* ... (contenido de información del equipo sin cambios) ... */}
                         <div className="info-grid">
                             <div className="info-item">
                                 <span className="info-label">Dispositivo</span>
@@ -491,30 +679,70 @@ export default function RepairDetailPage() {
 
                     {/* Detalle del Servicio */}
                     <section className="detail-card">
-                        <h2><Wrench size={20} /> Detalle del Servicio</h2>
+                        <div className="flex justify-between items-center mb-md">
+                            <h2 className="m-0"><Wrench size={20} /> Detalle del Servicio</h2>
+                            {(isAdmin || user.role === 'technician') && (
+                                <button
+                                    onClick={() => setIsEditingTechnical(!isEditingTechnical)}
+                                    className="btn btn-ghost btn-sm"
+                                >
+                                    {isEditingTechnical ? 'Cancelar' : 'Editar Servicio'}
+                                </button>
+                            )}
+                        </div>
                         <div className="info-grid">
                             <div className="info-item">
                                 <span className="info-label">Servicio Solicitado</span>
-                                <span className="info-value">{repair.service_name || repair.service_requested || 'General'}</span>
+                                {isEditingTechnical ? (
+                                    <input
+                                        type="text"
+                                        className="input input-sm"
+                                        value={technicalData.service_requested}
+                                        onChange={(e) => setTechnicalData({ ...technicalData, service_requested: e.target.value })}
+                                        placeholder="Descripción del servicio"
+                                    />
+                                ) : (
+                                    <span className="info-value">{repair.service_name || repair.service_requested || 'General'}</span>
+                                )}
                             </div>
                             <div className="info-item">
                                 <span className="info-label">Prioridad</span>
-                                <span className={`status-pill ${repair.priority}`}>
-                                    {repair.priority === 'urgent' ? 'Urgente' : 'Normal'}
-                                </span>
-                            </div>
-                            {repair.estimated_delivery && (
-                                <div className="info-item">
-                                    <span className="info-label">Entrega Estimada</span>
-                                    <span className="info-value">
-                                        {new Date(repair.estimated_delivery).toLocaleDateString('es-MX', {
-                                            day: '2-digit',
-                                            month: 'long',
-                                            year: 'numeric'
-                                        })}
+                                {isEditingTechnical ? (
+                                    <select
+                                        className="select select-sm"
+                                        value={technicalData.priority}
+                                        onChange={(e) => setTechnicalData({ ...technicalData, priority: e.target.value })}
+                                    >
+                                        <option value="normal">Normal</option>
+                                        <option value="urgent">Urgente</option>
+                                    </select>
+                                ) : (
+                                    <span className={`status-pill ${repair.priority}`}>
+                                        {repair.priority === 'urgent' ? 'Urgente' : 'Normal'}
                                     </span>
-                                </div>
-                            )}
+                                )}
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Entrega Estimada</span>
+                                {isEditingTechnical ? (
+                                    <input
+                                        type="date"
+                                        className="input input-sm"
+                                        value={technicalData.estimated_delivery}
+                                        onChange={(e) => setTechnicalData({ ...technicalData, estimated_delivery: e.target.value })}
+                                    />
+                                ) : (
+                                    <span className="info-value">
+                                        {repair.estimated_delivery
+                                            ? new Date(repair.estimated_delivery).toLocaleDateString('es-MX', {
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric'
+                                            })
+                                            : 'No definida'}
+                                    </span>
+                                )}
+                            </div>
                             <div className="info-item">
                                 <span className="info-label">Técnico Asignado</span>
                                 {isEditingTechnical ? (
@@ -537,6 +765,17 @@ export default function RepairDetailPage() {
                                 )}
                             </div>
                         </div>
+                        {isEditingTechnical && (
+                            <div className="flex justify-end mt-md">
+                                <button
+                                    onClick={handleUpdateStatus}
+                                    className="btn btn-primary btn-sm"
+                                    disabled={updatingStatus}
+                                >
+                                    {updatingStatus ? 'Guardando...' : 'Guardar Datos del Servicio'}
+                                </button>
+                            </div>
+                        )}
                     </section>
 
                     {/* Inspección de Entrada */}
@@ -617,7 +856,7 @@ export default function RepairDetailPage() {
                                     className="btn btn-primary btn-sm"
                                     disabled={updatingStatus}
                                 >
-                                    {updatingStatus ? 'Guardando...' : 'Guardar Hallazgos'}
+                                    {updatingStatus ? 'Guardando...' : 'Guardar Inspección'}
                                 </button>
                             </div>
                         )}
@@ -699,6 +938,15 @@ export default function RepairDetailPage() {
                                             className="input pl-xl"
                                         />
                                     </div>
+                                </div>
+                                <div className="flex justify-end mt-md w-full col-span-full">
+                                    <button
+                                        onClick={handleUpdateStatus}
+                                        className="btn btn-primary btn-sm"
+                                        disabled={updatingStatus}
+                                    >
+                                        {updatingStatus ? 'Guardando...' : 'Guardar Costos'}
+                                    </button>
                                 </div>
                             </div>
                         ) : (
@@ -885,6 +1133,16 @@ export default function RepairDetailPage() {
                     </section>
                 </div>
             </div>
-        </div>
+
+            <SignatureModal
+                isOpen={showSigModal}
+                onClose={() => setShowSigModal(false)}
+                onSave={handleSignatureSave}
+                title={sigType === 'approval' ? 'Aprobar Cotización' : 'Confirmar Entrega'}
+                description={sigType === 'approval'
+                    ? 'Por favor firma para autorizar la reparación y aceptar el costo estimado.'
+                    : 'Por favor firma para confirmar la recepción del equipo y aceptación de la garantía.'}
+            />
+        </div >
     );
 }

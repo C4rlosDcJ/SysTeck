@@ -410,6 +410,117 @@
     font-weight: 700;
 }
 
-.capitalize {
-    text-transform: capitalize;
+
+/* Approval Card Premium Design */
+.approval-card {
+    background: linear-gradient(145deg, rgba(30, 30, 30, 0.9), rgba(20, 20, 20, 0.95)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-left: 4px solid #4CAF50 !important;
+    padding: 1.5rem !important;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.approval-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.approval-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.approval-content {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: var(--border-radius-md);
+}
+
+.approval-content p {
+    margin: 0;
+    color: #e0e0e0;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.approval-content strong {
+    color: #4CAF50;
+    font-size: 1.2rem;
+}
+
+.approval-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.btn-approve {
+    flex: 1;
+    background: linear-gradient(135deg, #4CAF50 0%, #43A047 100%);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-approve:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    background: linear-gradient(135deg, #43A047 0%, #388E3C 100%);
+}
+
+.btn-reject {
+    flex: 1;
+    background: transparent;
+    color: #ef5350;
+    border: 1px solid rgba(239, 83, 80, 0.5);
+    padding: 1rem;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-reject:hover {
+    background: rgba(239, 83, 80, 0.1);
+    border-color: #ef5350;
+    transform: translateY(-2px);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

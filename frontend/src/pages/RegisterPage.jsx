@@ -59,7 +59,7 @@ export default function RegisterPage() {
         }
 
         try {
-            const { confirmPassword, ...userData } = formData;
+            const { confirmPassword: _confirmPassword, ...userData } = formData;
             await register(userData);
             navigate('/dashboard');
         } catch (err) {
@@ -78,7 +78,7 @@ export default function RegisterPage() {
                             <Wrench size={28} className="logo-icon" />
                             <span className="logo-text">Sis<span className="text-primary">-Tec</span></span>
                         </div>
-                        <h1>Únete a Sis-Tec</h1>
+                        <h1>Únete a Sys-Teck</h1>
                         <p>Crea tu cuenta y obtén acceso a todas las ventajas de nuestro servicio de reparación</p>
                         <div className="auth-features">
                             <div className="feature">

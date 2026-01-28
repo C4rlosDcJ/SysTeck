@@ -37,7 +37,7 @@ export default function NewRepairPage() {
 
     // Selection states
     const [selectedCustomer, setSelectedCustomer] = useState(null);
-    const [selectedService, setSelectedService] = useState(null);
+    const [_selectedService, setSelectedService] = useState(null);
 
     // Form data
     const [formData, setFormData] = useState({

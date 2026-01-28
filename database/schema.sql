@@ -96,10 +96,18 @@ CREATE TABLE IF NOT EXISTS repairs (
     storage_capacity VARCHAR(50),
     serial_number VARCHAR(100),
     imei VARCHAR(20),
+    device_password VARCHAR(255),
+    accessories_received TEXT,
+
+    physical_condition TINYINT,
+    existing_damage TEXT,
+    function_checklist JSON,
 
     problem_description TEXT NOT NULL,
+    service_requested TEXT,
     technical_observations TEXT,
     priority ENUM('normal','urgent') DEFAULT 'normal',
+    estimated_delivery DATE,
 
     battery_health VARCHAR(50),
     screen_status VARCHAR(100),
@@ -108,13 +116,21 @@ CREATE TABLE IF NOT EXISTS repairs (
     diagnosis_cost DECIMAL(10,2) DEFAULT 0,
     labor_cost DECIMAL(10,2) DEFAULT 0,
     parts_cost DECIMAL(10,2) DEFAULT 0,
+    discount DECIMAL(10,2) DEFAULT 0,
     total_cost DECIMAL(10,2) DEFAULT 0,
+    advance_payment DECIMAL(10,2) DEFAULT 0,
+
+    warranty_days INT DEFAULT 30,
+    warranty_expires DATE,
 
     status ENUM(
-        'received','diagnosing','waiting_approval',
-        'repairing','ready','delivered','cancelled'
+        'received','diagnosing','waiting_approval','waiting_parts',
+        'repairing','quality_check','ready','delivered','cancelled'
     ) DEFAULT 'received',
 
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    delivered_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
@@ -174,12 +190,74 @@ CREATE TABLE IF NOT EXISTS quote_images (
 );
 
 -- =====================================================
+-- TABLA: repair_images - Imágenes de reparaciones
+-- =====================================================
+CREATE TABLE IF NOT EXISTS repair_images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    repair_id INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    image_type ENUM('before', 'during', 'after') DEFAULT 'before',
+    description VARCHAR(255),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (repair_id) REFERENCES repairs(id) ON DELETE CASCADE
+);
+
+-- =====================================================
+-- TABLA: repair_status_history - Historial de estados
+-- =====================================================
+CREATE TABLE IF NOT EXISTS repair_status_history (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    repair_id INT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    notes TEXT,
+    changed_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (repair_id) REFERENCES repairs(id) ON DELETE CASCADE,
+    FOREIGN KEY (changed_by) REFERENCES users(id)
+);
+
+-- =====================================================
+-- TABLA: repair_notes - Notas de reparaciones
+-- =====================================================
+CREATE TABLE IF NOT EXISTS repair_notes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    repair_id INT NOT NULL,
+    user_id INT NOT NULL,
+    note TEXT NOT NULL,
+    is_internal BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (repair_id) REFERENCES repairs(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- =====================================================
+-- TABLA: settings - Configuraciones del sistema
+-- =====================================================
+CREATE TABLE IF NOT EXISTS settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    setting_key VARCHAR(100) UNIQUE NOT NULL,
+    setting_value TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Configuración por defecto
+INSERT INTO settings (setting_key, setting_value) VALUES
+('default_warranty_days', '30'),
+('company_name', 'SysTeck'),
+('company_phone', ''),
+('company_email', ''),
+('company_address', '')
+ON DUPLICATE KEY UPDATE setting_key = setting_key;
+
+-- =====================================================
 -- ÍNDICES
 -- =====================================================
 CREATE INDEX idx_repairs_customer ON repairs(customer_id);
 CREATE INDEX idx_repairs_status ON repairs(status);
 CREATE INDEX idx_quotes_customer ON quotes(customer_id);
 CREATE INDEX idx_quotes_status ON quotes(status);
+CREATE INDEX idx_status_history_repair ON repair_status_history(repair_id);
 
 -- =====================================================
 -- USUARIO ADMIN POR DEFECTO
@@ -200,7 +278,7 @@ INSERT INTO users (
 
 
 -- -- =====================================================
--- -- SIS-TEC - Sistema de Gestión de Reparaciones
+-- -- SYS-TECK - Sistema de Gestión de Reparaciones
 -- -- Base de datos MySQL
 -- -- =====================================================
 

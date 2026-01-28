@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
         try {
             const userData = await authService.getMe();
             setUser(userData);
-        } catch (err) {
+        } catch {
             localStorage.removeItem('token');
             setUser(null);
         } finally {
@@ -93,6 +93,7 @@ export function AuthProvider({ children }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) {

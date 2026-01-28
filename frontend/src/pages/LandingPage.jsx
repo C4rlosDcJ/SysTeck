@@ -47,12 +47,7 @@ export default function LandingPage() {
         { number: '04', icon: Truck, title: 'Entrega', description: 'Recibes tu equipo funcionando y con garantía' }
     ];
 
-    const features = [
-        { icon: Zap, title: 'Rápido', description: 'La mayoría de reparaciones en el mismo día' },
-        { icon: Shield, title: 'Garantía', description: '30 días de garantía en todas las reparaciones' },
-        { icon: Award, title: 'Calidad', description: 'Refacciones originales y compatibles de alta calidad' },
-        { icon: Users, title: 'Expertos', description: 'Técnicos certificados con años de experiencia' }
-    ];
+    // Features are displayed inline using stats, confidenceMetrics, and commonIssues
 
     const testimonials = [
         { name: 'María García', text: 'Excelente servicio, repararon mi iPhone en menos de 2 horas. Muy recomendados!', rating: 5, device: 'iPhone 15 Pro' },

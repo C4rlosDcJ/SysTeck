@@ -18,8 +18,8 @@ router.post('/', repairController.create);
 // Actualizar reparación (solo admin/técnico)
 router.put('/:id', isTechnicianOrAdmin, repairController.update);
 
-// Cambiar estado (solo admin/técnico)
-router.put('/:id/status', isTechnicianOrAdmin, repairController.updateStatus);
+// Cambiar estado (admin/técnico o cliente para aprobar/rechazar)
+router.put('/:id/status', auth, repairController.updateStatus);
 
 // Agregar nota
 router.post('/:id/notes', repairController.addNote);

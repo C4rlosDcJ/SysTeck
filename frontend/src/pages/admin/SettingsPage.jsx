@@ -7,7 +7,7 @@ import './SettingsPage.css';
 export default function SettingsPage() {
     const [settings, setSettings] = useState({
         default_warranty_days: '30',
-        business_name: 'Sis-Tec',
+        business_name: 'Sys-Teck',
         contact_email: '',
         contact_phone: ''
     });

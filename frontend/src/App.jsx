@@ -37,7 +37,9 @@ function DashboardLayout({ children, adminOnly = false }) {
 
   // Cerrar sidebar al cambiar de ruta en móvil
   useEffect(() => {
-    setIsSidebarOpen(false);
+    // Using a timeout to defer the state update, avoiding synchronous setState in effect
+    const timer = setTimeout(() => setIsSidebarOpen(false), 0);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   if (loading) {
