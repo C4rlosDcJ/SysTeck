@@ -104,28 +104,26 @@ SysTeck/
 
 ## Roadmap - Próximas Funcionalidades
 
-### 🔜 Métodos de Pago (En Desarrollo)
+### Métodos de Pago (En Desarrollo)
 Se planea integrar múltiples pasarelas de pago para facilitar las transacciones:
 
 | Proveedor | Estado | Descripción |
 |-----------|--------|-------------|
-| **Stripe** | 📋 Planeado | Pagos con tarjeta de crédito/débito internacionales |
-| **PayPal** | 📋 Planeado | Opción de pago alternativa para clientes internacionales |
-| **MercadoPago** | 📋 Planeado | Pagos locales en LATAM (OXXO, SPEI, tarjetas) |
-| **Pagos en efectivo** | 📋 Planeado | Registro manual de pagos en tienda |
+| **Stripe** | Planeado | Pagos con tarjeta de crédito/débito internacionales |
+| **PayPal** | Planeado | Opción de pago alternativa para clientes internacionales |
+| **MercadoPago** | Planeado | Pagos locales en LATAM (OXXO, SPEI, tarjetas) |
+| **Pagos en efectivo** | Planeado | Registro manual de pagos en tienda |
 
 #### Funcionalidades de Pagos Planeadas:
-- ✅ Anticipo parcial al momento de la recepción
-- ✅ Pago del saldo restante al momento de entrega
-- 📋 Notificaciones automáticas de pago recibido
-- 📋 Facturación electrónica (CFDI para México)
-- 📋 Historial de transacciones por cliente
-- 📋 Reportes de ingresos y conciliación
+- Anticipo parcial al momento de la recepción
+- Pago del saldo restante al momento de entrega
+- Notificaciones automáticas de pago recibido
+- Facturación electrónica (CFDI para México)
+- Historial de transacciones por cliente
+- Reportes de ingresos y conciliación
 
-### 🔮 Otras Mejoras Planeadas
+### Otras Mejoras Planeadas
 - **Notificaciones Push** - Alertas en tiempo real al cliente sobre su reparación
-- **Chat en Vivo** - Comunicación directa entre cliente y técnico
-- **App Móvil Nativa** - Versión iOS/Android del portal del cliente
 - **Inventario de Refacciones** - Control de stock y reordenamiento automático
 - **Multi-sucursal** - Soporte para múltiples ubicaciones
 
