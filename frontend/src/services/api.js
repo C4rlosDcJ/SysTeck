@@ -203,6 +203,54 @@ export const settingsService = {
     })
 };
 
+// Inventory Service (Admin)
+export const inventoryService = {
+    // Categorías
+    getCategories: () => fetchAPI('/inventory/categories'),
+    createCategory: (data) => fetchAPI('/inventory/categories', { method: 'POST', body: JSON.stringify(data) }),
+    updateCategory: (id, data) => fetchAPI(`/inventory/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCategory: (id) => fetchAPI(`/inventory/categories/${id}`, { method: 'DELETE' }),
+
+    // Productos
+    getProducts: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return fetchAPI(`/inventory/products${query ? `?${query}` : ''}`);
+    },
+    getProductById: (id) => fetchAPI(`/inventory/products/${id}`),
+    createProduct: (data) => fetchAPI('/inventory/products', { method: 'POST', body: JSON.stringify(data) }),
+    updateProduct: (id, data) => fetchAPI(`/inventory/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteProduct: (id) => fetchAPI(`/inventory/products/${id}`, { method: 'DELETE' }),
+
+    // Stock
+    getStockMovements: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return fetchAPI(`/inventory/stock-movements${query ? `?${query}` : ''}`);
+    },
+    addStockMovement: (data) => fetchAPI('/inventory/stock-movements', { method: 'POST', body: JSON.stringify(data) }),
+
+    // Stats
+    getStats: () => fetchAPI('/inventory/stats'),
+};
+
+// POS Service (Admin)
+export const posService = {
+    createSale: (data) => fetchAPI('/pos/sales', { method: 'POST', body: JSON.stringify(data) }),
+    getSales: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return fetchAPI(`/pos/sales${query ? `?${query}` : ''}`);
+    },
+    getSaleById: (id) => fetchAPI(`/pos/sales/${id}`),
+    cancelSale: (id) => fetchAPI(`/pos/sales/${id}/cancel`, { method: 'PUT' }),
+    getStats: () => fetchAPI('/pos/sales/stats'),
+
+    // Reparaciones cobrables
+    getBillableRepairs: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return fetchAPI(`/pos/repairs/billable${query ? `?${query}` : ''}`);
+    },
+    getRepairForPOS: (id) => fetchAPI(`/pos/repairs/${id}`),
+};
+
 // Upload Service
 export const uploadService = {
     uploadImages: async (repairId, files, imageType = 'before') => {
@@ -237,5 +285,7 @@ export default {
     customers: customerService,
     stats: statsService,
     settings: settingsService,
-    uploads: uploadService
+    uploads: uploadService,
+    inventory: inventoryService,
+    pos: posService
 };

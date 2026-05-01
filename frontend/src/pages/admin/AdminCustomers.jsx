@@ -7,8 +7,7 @@ import {
     Users,
     Mail,
     Phone,
-    Eye,
-    UserPlus
+    Eye
 } from 'lucide-react';
 import './AdminCustomers.css';
 
@@ -63,14 +62,10 @@ export default function AdminCustomers() {
                     <p className="text-muted">Administra la información de clientes</p>
                 </div>
                 <div className="header-actions">
-                    <button onClick={fetchCustomers} className="btn btn-secondary">
-                        <RefreshCw size={18} />
+                    <button onClick={fetchCustomers} className="btn btn-secondary btn-sm">
+                        <RefreshCw size={16} />
                         <span className="hide-on-mobile">Actualizar</span>
                     </button>
-                    <Link to="/admin/clientes/nuevo" className="btn btn-primary">
-                        <UserPlus size={18} />
-                        <span className="hide-on-mobile">Nuevo Cliente</span>
-                    </Link>
                 </div>
             </header>
 

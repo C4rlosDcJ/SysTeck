@@ -1,29 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { repairService } from '../../services/api';
+import { STATUS_LABELS, formatCurrency, formatDate } from '../../utils/constants';
 import {
-    Search,
-    Filter,
-    RefreshCw,
-    ChevronRight,
-    Wrench,
-    Download,
-    Eye
+    Search, Filter, RefreshCw, Wrench, Eye,
+    ChevronLeft, ChevronRight, ShoppingCart
 } from 'lucide-react';
 import './AdminRepairs.css';
 
-// Mapeo de estados
-const statusLabels = {
-    received: 'Recibido',
-    diagnosing: 'En Diagnóstico',
-    waiting_approval: 'Esperando Aprobación',
-    waiting_parts: 'Esperando Refacciones',
-    repairing: 'En Reparación',
-    quality_check: 'Control de Calidad',
-    ready: 'Listo para Entrega',
-    delivered: 'Entregado',
-    cancelled: 'Cancelado'
-};
+const ALL_STATUSES = Object.keys(STATUS_LABELS);
 
 export default function AdminRepairs() {
     const [repairs, setRepairs] = useState([]);
@@ -32,183 +17,211 @@ export default function AdminRepairs() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
+
+    const LIMIT = 20;
 
     useEffect(() => {
         fetchRepairs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [statusFilter, page, searchTerm]);
+    }, [statusFilter, page]);
+
+    // Debounce search
+    useEffect(() => {
+        const t = setTimeout(() => fetchRepairs(), 350);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm]);
 
     const fetchRepairs = async () => {
         setLoading(true);
         try {
-            const params = { limit: 20, page };
+            const params = { limit: LIMIT, page };
             if (statusFilter !== 'all') params.status = statusFilter;
-            if (searchTerm) params.search = searchTerm;
-
+            if (searchTerm.trim()) params.search = searchTerm.trim();
             const data = await repairService.getAll(params);
             setRepairs(data.repairs || []);
-            setTotalPages(Math.ceil((data.total || 0) / 20));
-        } catch (error) {
-            console.error('Error al cargar reparaciones:', error);
+            setTotal(data.total || 0);
+            setTotalPages(Math.ceil((data.total || 0) / LIMIT));
+        } catch (err) {
+            console.error('Error al cargar reparaciones:', err);
         } finally {
             setLoading(false);
         }
     };
 
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('es-MX', {
-            style: 'currency',
-            currency: 'MXN'
-        }).format(amount || 0);
-    };
-
-    const formatDate = (date) => {
-        return new Date(date).toLocaleDateString('es-MX', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        });
+    const handleStatusFilter = (s) => {
+        setStatusFilter(s);
+        setPage(1);
     };
 
     return (
-        <div className="admin-repairs-container">
+        <div className="repairs-page">
+
+            {/* ── Header ── */}
             <header className="page-header">
                 <div>
-                    <h1>Gestión de Reparaciones</h1>
-                    <p className="text-muted">Administra todas las órdenes de reparación</p>
+                    <h1>Reparaciones</h1>
+                    <p>{total > 0 ? `${total} órdenes en total` : 'Gestiona las órdenes de reparación'}</p>
                 </div>
                 <div className="header-actions">
-                    <button onClick={fetchRepairs} className="btn btn-secondary">
-                        <RefreshCw size={18} />
+                    <button onClick={fetchRepairs} className="btn btn-secondary btn-sm" title="Actualizar">
+                        <RefreshCw size={14} />
                         <span className="hide-on-mobile">Actualizar</span>
                     </button>
-                    <Link to="/admin/nueva-reparacion" className="btn btn-primary">
-                        <Wrench size={18} />
+                    <Link to="/admin/nueva-reparacion" className="btn btn-primary btn-sm">
+                        <Wrench size={14} />
                         <span className="hide-on-mobile">Nueva Reparación</span>
                     </Link>
                 </div>
             </header>
 
-            {/* Filtros */}
-            <div className="filters-bar">
+            {/* ── Status filter chips ── */}
+            <div className="status-chips">
+                <button
+                    className={`chip ${statusFilter === 'all' ? 'chip--active' : ''}`}
+                    onClick={() => handleStatusFilter('all')}
+                >
+                    Todas
+                </button>
+                {ALL_STATUSES.map(s => (
+                    <button
+                        key={s}
+                        className={`chip chip--${s} ${statusFilter === s ? 'chip--active' : ''}`}
+                        onClick={() => handleStatusFilter(s)}
+                    >
+                        {STATUS_LABELS[s]}
+                    </button>
+                ))}
+            </div>
+
+            {/* ── Search bar ── */}
+            <div className="repairs-search">
                 <div className="search-box">
-                    <Search size={18} className="search-icon" />
+                    <Search size={16} className="search-icon" />
                     <input
                         type="text"
                         placeholder="Buscar por ticket, cliente, modelo..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
                         className="input"
                     />
                 </div>
-                <div className="filter-group">
-                    <Filter size={18} />
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                        className="select"
-                    >
-                        <option value="all">Todos los estados</option>
-                        {Object.entries(statusLabels).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                        ))}
-                    </select>
+            </div>
+
+            {/* ── Table ── */}
+            {loading ? (
+                <div className="loading-state">
+                    <div className="spinner" />
+                    <p>Cargando reparaciones...</p>
                 </div>
-            </div>
-
-            {/* Tabla de reparaciones */}
-            <div className="repairs-table-container">
-                {loading ? (
-                    <div className="loading-state">
-                        <div className="spinner"></div>
-                        <p>Cargando reparaciones...</p>
-                    </div>
-                ) : repairs.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-icon">
-                            <Wrench size={48} />
-                        </div>
-                        <h3>No se encontraron reparaciones</h3>
-                        <p>Intenta con otros filtros o crea una nueva reparación</p>
-                    </div>
-                ) : (
-                    <>
-                        <div className="table-container">
-                            <table className="table repairs-table">
-                                <thead>
-                                    <tr>
-                                        <th>Ticket</th>
-                                        <th>Cliente</th>
-                                        <th>Dispositivo</th>
-                                        <th>Modelo</th>
-                                        <th>Estado</th>
-                                        <th>Total</th>
-                                        <th>Fecha</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {repairs.map((repair) => (
-                                        <tr key={repair.id}>
-                                            <td>
-                                                <span className="ticket-number">{repair.ticket_number}</span>
-                                            </td>
-                                            <td>
-                                                <div className="client-info">
-                                                    <span className="client-name">{repair.first_name} {repair.last_name}</span>
-                                                    <span className="client-email">{repair.email}</span>
+            ) : repairs.length === 0 ? (
+                <div className="empty-state">
+                    <div className="empty-icon"><Wrench size={40} /></div>
+                    <h3>No se encontraron reparaciones</h3>
+                    <p>Cambia los filtros o crea una nueva orden</p>
+                    <Link to="/admin/nueva-reparacion" className="btn btn-primary btn-sm">
+                        Nueva Reparación
+                    </Link>
+                </div>
+            ) : (
+                <>
+                    <div className="table-container">
+                        <table className="table repairs-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket</th>
+                                    <th>Cliente</th>
+                                    <th>Dispositivo</th>
+                                    <th>Estado</th>
+                                    <th>Pago</th>
+                                    <th>Total</th>
+                                    <th>Fecha</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {repairs.map(repair => (
+                                    <tr key={repair.id}>
+                                        <td>
+                                            <span className="repairs-ticket">{repair.ticket_number}</span>
+                                        </td>
+                                        <td>
+                                            <div className="repairs-client">
+                                                <div className="repairs-client-avatar">
+                                                    {repair.first_name?.charAt(0)}{repair.last_name?.charAt(0)}
                                                 </div>
-                                            </td>
-                                            <td>{repair.device_type_name}</td>
-                                            <td>{repair.model}</td>
-                                            <td>
-                                                <span className={`status-badge status-${repair.status}`}>
-                                                    {statusLabels[repair.status]}
-                                                </span>
-                                            </td>
-                                            <td className="cost-cell">{formatCurrency(repair.total_cost)}</td>
-                                            <td className="date-cell">{formatDate(repair.created_at)}</td>
-                                            <td>
-                                                <Link
-                                                    to={`/admin/reparaciones/${repair.id}`}
-                                                    className="btn btn-icon btn-ghost"
-                                                    title="Ver detalle"
-                                                >
-                                                    <Eye size={18} />
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                                <div>
+                                                    <div className="repairs-client-name">{repair.first_name} {repair.last_name}</div>
+                                                    <div className="repairs-client-email">{repair.email}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="repairs-device">
+                                                <span className="repairs-device-type">{repair.device_type_name}</span>
+                                                <span className="repairs-device-model">{repair.brand_name || repair.brand_other} · {repair.model}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge status-${repair.status}`}>
+                                                {STATUS_LABELS[repair.status]}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {repair.payment_status === 'paid' ? (
+                                                <span className="badge text-xs bg-success-muted text-success">✓ Pagado</span>
+                                            ) : repair.payment_status === 'partial' ? (
+                                                <span className="badge text-xs bg-warning-muted text-warning">◐ Parcial</span>
+                                            ) : repair.total_cost > 0 ? (
+                                                <span className="badge text-xs bg-error-muted text-error">○ Pendiente</span>
+                                            ) : (
+                                                <span className="text-muted text-xs">—</span>
+                                            )}
+                                        </td>
+                                        <td className="repairs-cost">
+                                            {formatCurrency(repair.total_cost)}
+                                        </td>
+                                        <td className="repairs-date">
+                                            {formatDate(repair.created_at)}
+                                        </td>
+                                        <td>
+                                            <Link
+                                                to={`/admin/reparaciones/${repair.id}`}
+                                                className="btn btn-ghost btn-icon"
+                                                title="Ver detalle"
+                                            >
+                                                <Eye size={16} />
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-                        {/* Paginación */}
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className="btn btn-ghost btn-sm"
-                                >
-                                    Anterior
-                                </button>
-                                <span className="page-info">
-                                    Página {page} de {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className="btn btn-ghost btn-sm"
-                                >
-                                    Siguiente
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
+                    {/* ── Pagination ── */}
+                    {totalPages > 1 && (
+                        <div className="pagination">
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                            >
+                                <ChevronLeft size={16} /> Anterior
+                            </button>
+                            <span className="page-info">Página {page} de {totalPages}</span>
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                            >
+                                Siguiente <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 }

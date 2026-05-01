@@ -24,6 +24,9 @@ import AdminReports from './pages/admin/AdminReports';
 import SettingsPage from './pages/admin/SettingsPage';
 import NewRepairPage from './pages/admin/NewRepairPage';
 import RepairDetailPage from './pages/shared/RepairDetailPage';
+import POSPage from './pages/admin/POSPage';
+import InventoryPage from './pages/admin/InventoryPage';
+import SalesHistoryPage from './pages/admin/SalesHistoryPage';
 
 import './index.css';
 
@@ -171,6 +174,21 @@ function AppRoutes() {
       <Route path="/admin/nueva-reparacion" element={
         <DashboardLayout adminOnly>
           <NewRepairPage />
+        </DashboardLayout>
+      } />
+      <Route path="/admin/pos" element={
+        <DashboardLayout adminOnly>
+          <POSPage />
+        </DashboardLayout>
+      } />
+      <Route path="/admin/inventario" element={
+        <DashboardLayout adminOnly>
+          <InventoryPage />
+        </DashboardLayout>
+      } />
+      <Route path="/admin/ventas" element={
+        <DashboardLayout adminOnly>
+          <SalesHistoryPage />
         </DashboardLayout>
       } />
 

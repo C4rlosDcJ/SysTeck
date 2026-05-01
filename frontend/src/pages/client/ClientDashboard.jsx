@@ -41,23 +41,15 @@ export default function ClientDashboard() {
 
     const fetchRepairs = async () => {
         try {
-            const data = await repairService.getAll({ limit: 5 });
-            setRepairs(data.repairs || []);
+            // Single API call — derive stats from full list
+            const allData = await repairService.getAll({ limit: 200 });
+            const all = allData.repairs || [];
 
-            // Calcular estadísticas
-            const allRepairs = await repairService.getAll({ limit: 100 });
-            const active = allRepairs.repairs?.filter(r =>
-                !['delivered', 'cancelled'].includes(r.status)
-            ).length || 0;
-            const completed = allRepairs.repairs?.filter(r =>
-                r.status === 'delivered'
-            ).length || 0;
+            const active = all.filter(r => !['delivered', 'cancelled'].includes(r.status)).length;
+            const completed = all.filter(r => r.status === 'delivered').length;
 
-            setStats({
-                active,
-                completed,
-                total: allRepairs.repairs?.length || 0
-            });
+            setRepairs(all.slice(0, 5));
+            setStats({ active, completed, total: all.length });
         } catch (error) {
             console.error('Error al cargar reparaciones:', error);
         } finally {

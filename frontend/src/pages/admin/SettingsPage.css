@@ -1,64 +1,41 @@
+/* Settings Page */
 .settings-container {
-    padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
+    padding: var(--sp-8);
+    background: var(--color-bg);
+    min-height: 100vh;
 }
 
-.settings-header {
-    margin-bottom: 2rem;
-}
-
-.settings-card {
-    background: var(--color-bg-card);
-    border-radius: var(--border-radius-lg);
-    padding: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.settings-form {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+.settings-grid {
+    display: grid;
+    gap: var(--sp-4);
+    max-width: 760px;
 }
 
 .settings-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
 }
-
 .settings-section h2 {
-    font-size: 1.25rem;
-    color: var(--color-text-primary);
-    border-bottom: 1px solid var(--color-bg-secondary);
-    padding-bottom: 0.5rem;
+    font-size: var(--font-md);
+    font-weight: 600;
+    margin-bottom: var(--sp-5);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--color-border);
 }
 
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+.settings-form { display: flex; flex-direction: column; gap: var(--sp-4); }
+.settings-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-4); }
+.settings-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-2); }
+
+.settings-note {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--sp-1);
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.form-group label {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-}
-
-.settings-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 1rem;
-}
-
-@media (max-width: 600px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
+@media (max-width: 768px) {
+    .settings-container { padding: var(--sp-4); }
+    .settings-row { grid-template-columns: 1fr; }
 }

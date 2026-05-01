@@ -58,11 +58,12 @@ exports.getById = async (req, res) => {
 exports.create = async (req, res) => {
     try {
         const { name, description, device_type_id, base_price, estimated_time } = req.body;
+        const finalPrice = (base_price === '' || base_price === undefined) ? 0 : base_price;
 
         const [result] = await db.query(`
       INSERT INTO services_catalog (name, description, device_type_id, base_price, estimated_time)
       VALUES (?, ?, ?, ?, ?)
-    `, [name, description, device_type_id || null, base_price, estimated_time]);
+    `, [name, description, device_type_id || null, finalPrice, estimated_time]);
 
         res.status(201).json({
             message: 'Servicio creado exitosamente.',
@@ -79,6 +80,7 @@ exports.update = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, description, device_type_id, base_price, estimated_time, is_active } = req.body;
+        const finalPrice = (base_price === '' || base_price === undefined) ? 0 : base_price;
 
         await db.query(`
       UPDATE services_catalog SET
@@ -89,7 +91,7 @@ exports.update = async (req, res) => {
         estimated_time = COALESCE(?, estimated_time),
         is_active = COALESCE(?, is_active)
       WHERE id = ?
-    `, [name, description, device_type_id, base_price, estimated_time, is_active, id]);
+    `, [name, description, device_type_id, finalPrice, estimated_time, is_active, id]);
 
         res.json({ message: 'Servicio actualizado exitosamente.' });
     } catch (error) {

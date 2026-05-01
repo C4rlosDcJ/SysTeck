@@ -12,7 +12,10 @@ import {
     Settings,
     PlusCircle,
     FileSpreadsheet,
-    BarChart4
+    BarChart4,
+    ShoppingCart,
+    Receipt,
+    Package
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -34,12 +37,18 @@ export default function Sidebar({ isOpen, toggleMenu }) {
 
     const adminLinks = [
         { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+        { type: 'separator', label: 'Operaciones' },
         { to: '/admin/reparaciones', icon: Wrench, label: 'Reparaciones' },
+        { to: '/admin/nueva-reparacion', icon: PlusCircle, label: 'Nueva Reparación' },
         { to: '/admin/clientes', icon: Users, label: 'Clientes' },
         { to: '/admin/servicios', icon: FileSpreadsheet, label: 'Servicios' },
+        { type: 'separator', label: 'Ventas' },
+        { to: '/admin/pos', icon: ShoppingCart, label: 'Punto de Venta' },
+        { to: '/admin/ventas', icon: Receipt, label: 'Historial Ventas' },
+        { to: '/admin/inventario', icon: Package, label: 'Inventario' },
+        { type: 'separator', label: 'Administración' },
         { to: '/admin/reportes', icon: BarChart4, label: 'Reportes' },
         { to: '/admin/configuracion', icon: Settings, label: 'Configuración' },
-        { to: '/admin/nueva-reparacion', icon: PlusCircle, label: 'Nueva Reparación' },
     ];
 
     const links = isAdmin ? adminLinks : clientLinks;
@@ -59,20 +68,26 @@ export default function Sidebar({ isOpen, toggleMenu }) {
 
                 <nav className="sidebar-nav">
                     <ul className="nav-list">
-                        {links.map((link) => (
-                            <li key={link.to}>
-                                <NavLink
-                                    to={link.to}
-                                    end={link.exact}
-                                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                                    onClick={() => {
-                                        if (window.innerWidth <= 900) toggleMenu();
-                                    }}
-                                >
-                                    <link.icon size={20} className="nav-icon" />
-                                    <span className="nav-label">{link.label}</span>
-                                </NavLink>
-                            </li>
+                        {links.map((link, idx) => (
+                            link.type === 'separator' ? (
+                                <li key={`sep-${idx}`} className="nav-separator">
+                                    <span>{link.label}</span>
+                                </li>
+                            ) : (
+                                <li key={link.to}>
+                                    <NavLink
+                                        to={link.to}
+                                        end={link.exact}
+                                        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                                        onClick={() => {
+                                            if (window.innerWidth <= 900) toggleMenu();
+                                        }}
+                                    >
+                                        <link.icon size={20} className="nav-icon" />
+                                        <span className="nav-label">{link.label}</span>
+                                    </NavLink>
+                                </li>
+                            )
                         ))}
                     </ul>
                 </nav>
