@@ -12,14 +12,6 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Verificar conexión
-pool.getConnection()
-  .then(connection => {
-    console.log('[DB] Conexión a MySQL establecida correctamente');
-    connection.release();
-  })
-  .catch(err => {
-    console.error('[DB] Error al conectar a MySQL:', err.message);
-  });
+// El pool se exporta y la verificación de conexión se realiza en server.js al iniciar.
 
 module.exports = pool;

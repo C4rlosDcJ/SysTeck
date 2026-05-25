@@ -48,8 +48,21 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`
+async function startServer() {
+    try {
+        // 1. Inicializar base de datos si no existe
+        const dbInit = require('./config/dbInit');
+        await dbInit();
+
+        // 2. Verificar la conexión del pool
+        const db = require('./config/database');
+        const connection = await db.getConnection();
+        console.log('[DB] Conexión a MySQL verificada y lista para consultas.');
+        connection.release();
+
+        // 3. Levantar el servidor Express
+        app.listen(PORT, () => {
+            console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                           ║
 ║   SysTeck API Server                                     ║
@@ -58,7 +71,14 @@ app.listen(PORT, () => {
 ║   Ambiente: ${process.env.NODE_ENV || 'development'}                              ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════╝
-  `);
-});
+            `);
+        });
+    } catch (error) {
+        console.error('❌ Error fatal al arrancar el servidor backend:', error);
+        process.exit(1);
+    }
+}
+
+startServer();
 
 module.exports = app;
