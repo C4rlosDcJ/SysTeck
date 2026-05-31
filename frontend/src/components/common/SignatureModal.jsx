@@ -62,6 +62,13 @@ const SignatureModal = ({ isOpen, onClose, onSave, title, description }) => {
                     </button>
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         <button
+                            onClick={() => onSave(null)}
+                            className="btn btn-ghost"
+                            style={{ color: 'var(--color-primary)' }}
+                        >
+                            Omitir Firma
+                        </button>
+                        <button
                             onClick={onClose}
                             className="btn btn-secondary"
                         >

@@ -1,0 +1,299 @@
+.customer-detail-container {
+    padding: var(--sp-8);
+    background: var(--color-bg);
+    min-height: 100vh;
+}
+
+.back-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    transition: color var(--transition-fast) ease;
+    margin-bottom: var(--sp-4);
+}
+
+.back-link-btn:hover {
+    color: var(--color-primary);
+}
+
+.header-main-info h1 {
+    font-size: var(--font-3xl);
+    font-weight: 700;
+    margin-bottom: var(--sp-1);
+}
+
+.customer-detail-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: var(--sp-6);
+    margin-top: var(--sp-6);
+    align-items: start;
+}
+
+/* Info Card */
+.customer-info-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--sp-6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.customer-avatar-lg {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--sp-4);
+}
+
+.customer-info-card h2 {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    margin-bottom: var(--sp-1);
+    color: var(--color-text);
+}
+
+.customer-role-badge {
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-full);
+    margin-bottom: var(--sp-6);
+}
+
+.customer-meta-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    text-align: left;
+}
+
+.meta-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+    color: var(--color-text-secondary);
+}
+
+.meta-item svg {
+    margin-top: 2px;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.meta-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.meta-text .label {
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.meta-text .value {
+    font-size: var(--font-sm);
+    color: var(--color-text);
+    font-weight: 500;
+    word-break: break-all;
+}
+
+/* History & Stats Section */
+.customer-history-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-6);
+}
+
+/* Stats Cards */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-4);
+}
+
+.stat-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-card.spent .stat-icon-wrapper {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--color-success);
+}
+
+.stat-card.total .stat-icon-wrapper {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+.stat-card.active .stat-icon-wrapper {
+    background: rgba(234, 179, 8, 0.1);
+    color: var(--color-warning);
+}
+
+.stat-card.completed .stat-icon-wrapper {
+    background: rgba(6, 182, 212, 0.1);
+    color: #06b6d4;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-content .label {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.stat-content h3 {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-top: 2px;
+}
+
+/* Repairs Table Card */
+.repairs-history-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--sp-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--sp-5);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--sp-4);
+}
+
+.card-header-actions h3 {
+    font-size: var(--font-md);
+    font-weight: 600;
+}
+
+.repairs-table-wrapper {
+    overflow-x: auto;
+}
+
+.repairs-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: var(--font-sm);
+}
+
+.repairs-history-table th {
+    padding: var(--sp-3) var(--sp-4);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid var(--color-border);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.repairs-history-table td {
+    padding: var(--sp-4);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+.repairs-history-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ticket-cell strong {
+    font-family: monospace;
+    font-size: var(--font-sm);
+    color: var(--color-primary);
+}
+
+.device-desc {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.device-type-sub {
+    font-size: var(--font-xs);
+    color: var(--color-text-secondary);
+}
+
+.empty-repairs-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-12) var(--sp-6);
+    text-align: center;
+    color: var(--color-text-muted);
+    gap: var(--sp-3);
+}
+
+/* Badge classes */
+.badge-waiting {
+    background: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+}
+.badge-delivered {
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+    .customer-detail-grid {
+        grid-template-columns: 1fr;
+    }
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .customer-detail-container {
+        padding: var(--sp-4);
+    }
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
+}

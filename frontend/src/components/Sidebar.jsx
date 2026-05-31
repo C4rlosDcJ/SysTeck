@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
     Wrench,
     Home,
@@ -15,13 +17,33 @@ import {
     BarChart4,
     ShoppingCart,
     Receipt,
-    Package
+    Package,
+    Search,
+    Moon,
+    Sun
 } from 'lucide-react';
+import GlobalSearch from './common/GlobalSearch';
 import './Sidebar.css';
 
 export default function Sidebar({ isOpen, toggleMenu }) {
     const { user, logout, isAdmin } = useAuth();
+    const { theme, toggleTheme, businessName, businessLogo } = useTheme();
     const navigate = useNavigate();
+    const [searchOpen, setSearchOpen] = useState(false);
+
+    // Cmd+K / Ctrl+K keyboard shortcut
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                if (isAdmin) {
+                    setSearchOpen(prev => !prev);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isAdmin]);
 
     const handleLogout = () => {
         logout();
@@ -53,6 +75,22 @@ export default function Sidebar({ isOpen, toggleMenu }) {
 
     const links = isAdmin ? adminLinks : clientLinks;
 
+    // Split business name to color secondary parts (e.g. Sys-Teck -> Sys & -Teck)
+    const renderBusinessName = () => {
+        if (!businessName) return 'Sys-Teck';
+        if (businessName.includes('-')) {
+            const parts = businessName.split('-');
+            return <>{parts[0]}<span className="text-primary">-{parts.slice(1).join('-')}</span></>;
+        }
+        if (businessName.includes(' ')) {
+            const parts = businessName.split(' ');
+            return <>{parts[0]} <span className="text-primary">{parts.slice(1).join(' ')}</span></>;
+        }
+        // If single word, split in half to create stylized visual contrast
+        const mid = Math.ceil(businessName.length / 2);
+        return <>{businessName.substring(0, mid)}<span className="text-primary">{businessName.substring(mid)}</span></>;
+    };
+
     return (
         <>
             {/* Overlay para móvil */}
@@ -61,10 +99,22 @@ export default function Sidebar({ isOpen, toggleMenu }) {
             <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
                 <div className="sidebar-header">
                     <div className="sidebar-logo">
-                        <Wrench size={24} className="logo-icon" />
-                        <span className="logo-text">Sys<span className="text-primary">-Teck</span></span>
+                        {businessLogo ? (
+                            <img src={businessLogo} alt="Logo" className="logo-img-sidebar" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: 'var(--radius-sm)' }} />
+                        ) : (
+                            <Wrench size={24} className="logo-icon" />
+                        )}
+                        <span className="logo-text">{renderBusinessName()}</span>
                     </div>
                 </div>
+
+                {isAdmin && (
+                    <div className="sidebar-search-trigger" onClick={() => setSearchOpen(true)}>
+                        <Search size={18} />
+                        <span>Buscar...</span>
+                        <kbd className="search-kbd">⌘K</kbd>
+                    </div>
+                )}
 
                 <nav className="sidebar-nav">
                     <ul className="nav-list">
@@ -93,6 +143,15 @@ export default function Sidebar({ isOpen, toggleMenu }) {
                 </nav>
 
                 <div className="sidebar-footer">
+                    <div className="theme-toggle-container" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                        <button onClick={toggleTheme} className="btn btn-secondary w-full" style={{ justifyContent: 'center' }}>
+                            {theme === 'light' ? (
+                                <><Moon size={18} /> <span>Modo Oscuro</span></>
+                            ) : (
+                                <><Sun size={18} /> <span>Modo Claro</span></>
+                            )}
+                        </button>
+                    </div>
                     <div className="user-info">
                         <div className="user-avatar">
                             {user?.first_name?.charAt(0).toUpperCase()}
@@ -110,6 +169,8 @@ export default function Sidebar({ isOpen, toggleMenu }) {
                     </button>
                 </div>
             </aside>
+
+            <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
         </>
     );
 }

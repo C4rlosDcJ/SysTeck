@@ -108,9 +108,9 @@ export default function LandingPage() {
                                 {isAuthenticated ? 'Solicitar Reparación' : 'Comenzar Ahora'}
                                 <ArrowRight size={20} />
                             </Link>
-                            <a href="#servicios" className="btn btn-outline btn-lg">
-                                Ver Servicios
-                            </a>
+                            <Link to="/rastrear" className="btn btn-outline btn-lg">
+                                Rastrear Equipo
+                            </Link>
                         </div>
                     </div>
                     <div className="hero-visual">

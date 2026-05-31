@@ -7,13 +7,17 @@ import {
     Trash2,
     X,
     Save,
-    DollarSign,
     Search,
     Smartphone,
     Trophy,
     Wrench,
-    CheckCircle2,
-    AlertCircle
+    Clock,
+    Tag,
+    Layers,
+    ToggleLeft,
+    CheckCircle,
+    XCircle,
+    HelpCircle
 } from 'lucide-react';
 import './AdminServices.css';
 
@@ -149,11 +153,11 @@ export default function AdminServices() {
             <header className="page-header">
                 <div>
                     <h1>Configuración de Catálogos</h1>
-                    <p className="text-muted">Administra servicios, equipos y marcas</p>
+                    <p className="text-muted">Administra servicios, equipos y marcas de forma interactiva</p>
                 </div>
                 <div className="header-actions">
                     <button onClick={fetchData} className="btn btn-secondary">
-                        <RefreshCw size={18} /> <span className="hide-on-mobile">Actualizar</span>
+                        <RefreshCw size={16} /> <span className="hide-on-mobile">Actualizar</span>
                     </button>
                     <button onClick={() => openModal()} className="btn btn-primary">
                         <Plus size={18} /> Nuevo <span className="hide-on-mobile">{activeTab === 'services' ? 'Servicio' : activeTab === 'types' ? 'Tipo' : 'Marca'}</span>
@@ -161,35 +165,35 @@ export default function AdminServices() {
                 </div>
             </header>
 
-            {/* Tabs */}
-            <div className="tabs-container">
+            {/* Pestañas Modernas */}
+            <div className="tabs">
                 <button
                     className={`tab-btn ${activeTab === 'services' ? 'active' : ''}`}
                     onClick={() => { setActiveTab('services'); setSearchTerm(''); }}
                 >
-                    <Wrench size={18} /> Servicios
+                    <Wrench size={16} /> Servicios
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'types' ? 'active' : ''}`}
                     onClick={() => { setActiveTab('types'); setSearchTerm(''); }}
                 >
-                    <Smartphone size={18} /> Tipos de Equipo
+                    <Smartphone size={16} /> Tipos de Equipo
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'brands' ? 'active' : ''}`}
                     onClick={() => { setActiveTab('brands'); setSearchTerm(''); }}
                 >
-                    <Trophy size={18} /> Marcas
+                    <Trophy size={16} /> Marcas
                 </button>
             </div>
 
-            {/* Filters */}
+            {/* Buscador y Filtros */}
             <div className="filters-bar">
                 <div className="search-box">
                     <Search size={18} className="search-icon" />
                     <input
                         type="text"
-                        placeholder={`Buscar ${activeTab === 'services' ? 'servicios' : activeTab === 'types' ? 'tipos' : 'marcas'}...`}
+                        placeholder={`Buscar ${activeTab === 'services' ? 'servicios' : activeTab === 'types' ? 'tipos de equipo' : 'marcas'}...`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="input"
@@ -209,90 +213,125 @@ export default function AdminServices() {
                 )}
             </div>
 
-            {/* Content */}
+            {/* Contenido Visual en base a Pestaña Activa */}
             <div className="catalog-content">
                 {loading ? (
                     <div className="loading-state">
                         <div className="spinner"></div>
-                        <p>Cargando datos...</p>
-                    </div>
-                ) : (activeTab === 'services' && filteredServices.length === 0) ||
-                    (activeTab === 'types' && filteredTypes.length === 0) ||
-                    (activeTab === 'brands' && filteredBrands.length === 0) ? (
-                    <div className="empty-state">
-                        <AlertCircle size={48} />
-                        <h3>No se encontraron resultados</h3>
-                        <p>Intenta ajustar tus filtros o búsqueda</p>
+                        <p>Cargando datos del catálogo...</p>
                     </div>
                 ) : (
-                    <div className="table-container">
-                        <table className="table">
-                            <thead>
-                                {activeTab === 'services' ? (
-                                    <tr>
-                                        <th>Servicio</th>
-                                        <th>Tipo</th>
-                                        <th>Precio</th>
-                                        <th>Estimado</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                ) : (
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                )}
-                            </thead>
-                            <tbody>
-                                {activeTab === 'services' && filteredServices.map(item => (
-                                    <tr key={item.id} className={!item.is_active ? 'inactive-row' : ''}>
-                                        <td>
-                                            <div className="service-info">
-                                                <span className="bold">{item.name}</span>
-                                                <span className="text-muted text-xs">{item.description}</span>
+                    <>
+                        {/* 1. Vista de Servicios (Cards) */}
+                        {activeTab === 'services' && (
+                            filteredServices.length === 0 ? (
+                                <div className="empty-state">
+                                    <XCircle size={48} className="text-muted" />
+                                    <h3>No se encontraron servicios</h3>
+                                    <p>Intenta ajustar tus filtros o registra un servicio nuevo.</p>
+                                </div>
+                            ) : (
+                                <div className="services-grid animate-fadeIn">
+                                    {filteredServices.map(item => {
+                                        const typeName = deviceTypes.find(t => t.id === item.device_type_id)?.name || 'General (Todos)';
+                                        return (
+                                            <div key={item.id} className={`service-card ${!item.is_active ? 'inactive' : ''}`}>
+                                                <div className="service-card-header">
+                                                    <span className="service-name">{item.name}</span>
+                                                    <span className={`service-badge ${item.is_active ? 'active' : 'inactive'}`}>
+                                                        {item.is_active ? 'Activo' : 'Inactivo'}
+                                                    </span>
+                                                </div>
+                                                <p className="service-desc">{item.description || 'Sin descripción detallada disponible.'}</p>
+                                                <div className="service-meta-row">
+                                                    <span className="service-price">{servicesCatalog.formatCurrency(item.base_price)}</span>
+                                                    <div className="service-time">
+                                                        <Clock size={12} />
+                                                        <span>{item.estimated_time || 'Bajo consulta'}</span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--sp-2)' }}>
+                                                    <span className="text-muted" style={{ fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                        <Smartphone size={10} /> {typeName}
+                                                    </span>
+                                                    <div className="service-card-actions">
+                                                        <button onClick={() => openModal(item)} className="btn btn-icon btn-ghost" title="Editar"><Edit size={14} /></button>
+                                                        <button onClick={() => handleDelete(item.id)} className="btn btn-icon btn-ghost btn-danger" title="Eliminar"><Trash2 size={14} /></button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </td>
-                                        <td>{deviceTypes.find(t => t.id === item.device_type_id)?.name || 'General'}</td>
-                                        <td className="text-success bold">{servicesCatalog.formatCurrency(item.base_price)}</td>
-                                        <td>{item.estimated_time || '-'}</td>
-                                        <td>
-                                            <span className={`status-pill ${item.is_active ? 'active' : 'inactive'}`}>
-                                                {item.is_active ? 'Activo' : 'Inactivo'}
-                                            </span>
-                                        </td>
-                                        <td>
+                                        );
+                                    })}
+                                </div>
+                            )
+                        )}
+
+                        {/* 2. Vista de Tipos de Dispositivo (Chips Interactivos) */}
+                        {activeTab === 'types' && (
+                            filteredTypes.length === 0 ? (
+                                <div className="empty-state">
+                                    <XCircle size={48} className="text-muted" />
+                                    <h3>No se encontraron tipos de equipo</h3>
+                                    <p>Registra un nuevo tipo para comenzar a clasificar servicios.</p>
+                                </div>
+                            ) : (
+                                <div className="types-brands-grid animate-fadeIn">
+                                    {filteredTypes.map(item => (
+                                        <div key={item.id} className={`catalogue-chip-card ${!item.is_active ? 'inactive' : ''}`}>
+                                            <div className="chip-card-info">
+                                                <div className="chip-card-icon">
+                                                    <Smartphone size={16} />
+                                                </div>
+                                                <div>
+                                                    <div className="chip-card-name">{item.name}</div>
+                                                    <div className="chip-card-status">{item.is_active ? 'Activo' : 'Inactivo'}</div>
+                                                </div>
+                                            </div>
                                             <div className="action-buttons">
-                                                <button onClick={() => openModal(item)} className="btn btn-icon btn-ghost"><Edit size={16} /></button>
-                                                <button onClick={() => handleDelete(item.id)} className="btn btn-icon btn-ghost btn-danger"><Trash2 size={16} /></button>
+                                                <button onClick={() => openModal(item)} className="btn btn-icon btn-ghost" title="Editar"><Edit size={14} /></button>
+                                                <button onClick={() => handleDelete(item.id)} className="btn btn-icon btn-ghost btn-danger" title="Eliminar"><Trash2 size={14} /></button>
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(activeTab === 'types' ? filteredTypes : filteredBrands).map(item => (
-                                    <tr key={item.id} className={!item.is_active ? 'inactive-row' : ''}>
-                                        <td className="bold">{item.name}</td>
-                                        <td>
-                                            <span className={`status-pill ${item.is_active ? 'active' : 'inactive'}`}>
-                                                {item.is_active ? 'Activo' : 'Inactivo'}
-                                            </span>
-                                        </td>
-                                        <td>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        )}
+
+                        {/* 3. Vista de Marcas (Chips Interactivos) */}
+                        {activeTab === 'brands' && (
+                            filteredBrands.length === 0 ? (
+                                <div className="empty-state">
+                                    <XCircle size={48} className="text-muted" />
+                                    <h3>No se encontraron marcas</h3>
+                                    <p>Añade marcas al catálogo para usarlas en tus órdenes de servicio.</p>
+                                </div>
+                            ) : (
+                                <div className="types-brands-grid animate-fadeIn">
+                                    {filteredBrands.map(item => (
+                                        <div key={item.id} className={`catalogue-chip-card ${!item.is_active ? 'inactive' : ''}`}>
+                                            <div className="chip-card-info">
+                                                <div className="chip-card-icon">
+                                                    <Trophy size={16} />
+                                                </div>
+                                                <div>
+                                                    <div className="chip-card-name">{item.name}</div>
+                                                    <div className="chip-card-status">{item.is_active ? 'Activo' : 'Inactivo'}</div>
+                                                </div>
+                                            </div>
                                             <div className="action-buttons">
-                                                <button onClick={() => openModal(item)} className="btn btn-icon btn-ghost"><Edit size={16} /></button>
-                                                <button onClick={() => handleDelete(item.id)} className="btn btn-icon btn-ghost btn-danger"><Trash2 size={16} /></button>
+                                                <button onClick={() => openModal(item)} className="btn btn-icon btn-ghost" title="Editar"><Edit size={14} /></button>
+                                                <button onClick={() => handleDelete(item.id)} className="btn btn-icon btn-ghost btn-danger" title="Eliminar"><Trash2 size={14} /></button>
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        )}
+                    </>
                 )}
             </div>
 
-            {/* Modal */}
+            {/* Modal de Registro / Edición */}
             {showModal && (
                 <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
@@ -302,43 +341,48 @@ export default function AdminServices() {
                         </div>
                         <form onSubmit={handleSubmit} className="form">
                             <div className="input-group">
-                                <label>Nombre *</label>
-                                <input type="text" name="name" className="input" value={formData.name || ''} onChange={handleChange} required />
+                                <label>Nombre del Elemento *</label>
+                                <input type="text" name="name" className="input" value={formData.name || ''} onChange={handleChange} required placeholder="Ej. Cambio de Pantalla, iPhone, Samsung..." />
                             </div>
                             {activeTab === 'services' && (
                                 <>
-                                    <div className="input-group">
-                                        <label>Descripción</label>
-                                        <textarea name="description" className="input" rows="2" value={formData.description || ''} onChange={handleChange}></textarea>
+                                    <div className="input-group mt-sm">
+                                        <label>Descripción del Servicio</label>
+                                        <textarea name="description" className="input" rows="3" value={formData.description || ''} onChange={handleChange} placeholder="Detalla el alcance del servicio..."></textarea>
                                     </div>
-                                    <div className="form-row">
+                                    <div className="form-row mt-sm">
                                         <div className="input-group">
-                                            <label>Tipo de Equipo</label>
+                                            <label>Tipo de Equipo compatible</label>
                                             <select name="device_type_id" className="select" value={formData.device_type_id || ''} onChange={handleChange}>
-                                                <option value="">General (Todos)</option>
+                                                <option value="">General (Todos los equipos)</option>
                                                 {deviceTypes.map(t => (
                                                     <option key={t.id} value={t.id}>{t.name}</option>
                                                 ))}
                                             </select>
                                         </div>
                                         <div className="input-group">
-                                            <label>Precio Base ($)</label>
-                                            <input type="number" name="base_price" className="input" value={formData.base_price || ''} onChange={handleChange} />
+                                            <label>Precio Base ($ MXN)</label>
+                                            <input type="number" name="base_price" className="input" value={formData.base_price || ''} onChange={handleChange} placeholder="0.00" />
                                         </div>
                                     </div>
-                                    <div className="input-group">
-                                        <label>Tiempo Estimado</label>
-                                        <input type="text" name="estimated_time" className="input" placeholder="Ej: 1 hr, 2 días..." value={formData.estimated_time || ''} onChange={handleChange} />
+                                    <div className="input-group mt-sm">
+                                        <label>Tiempo Estimado de Entrega</label>
+                                        <input type="text" name="estimated_time" className="input" placeholder="Ej: 1-2 horas, 1 día hábil..." value={formData.estimated_time || ''} onChange={handleChange} />
                                     </div>
                                 </>
                             )}
-                            <label className="checkbox-label mt-md">
-                                <input type="checkbox" name="is_active" checked={formData.is_active || false} onChange={handleChange} />
-                                <span>Elemento Activo</span>
-                            </label>
+                            <div className="mt-md" style={{ background: 'var(--color-bg-elevated)', padding: 'var(--sp-3) var(--sp-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                                <label className="checkbox-label">
+                                    <input type="checkbox" name="is_active" checked={formData.is_active || false} onChange={handleChange} />
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                        {formData.is_active ? <CheckCircle size={16} className="text-success" /> : <XCircle size={16} className="text-muted" />}
+                                        Elemento Habilitado (Activo en Catálogo)
+                                    </span>
+                                </label>
+                            </div>
                             <div className="modal-actions">
                                 <button type="button" onClick={closeModal} className="btn btn-secondary">Cancelar</button>
-                                <button type="submit" className="btn btn-primary"><Save size={18} /> Guardar</button>
+                                <button type="submit" className="btn btn-primary"><Save size={18} /> Guardar Cambios</button>
                             </div>
                         </form>
                     </div>

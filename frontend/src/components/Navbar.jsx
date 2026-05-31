@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Wrench, Menu, X, User, LogOut } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import './Navbar.css';
 
 export default function Navbar() {
     const { user, isAuthenticated, logout, isAdmin } = useAuth();
+    const { businessLogo, businessName } = useTheme();
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
@@ -17,13 +19,31 @@ export default function Navbar() {
 
     const isActive = (path) => location.pathname === path;
 
+    const renderBusinessName = () => {
+        const name = businessName || 'Sys-Teck';
+        if (name.includes('-')) {
+            const parts = name.split('-');
+            return <>{parts[0]}<span className="text-primary">-{parts.slice(1).join('-')}</span></>;
+        }
+        if (name.includes(' ')) {
+            const parts = name.split(' ');
+            return <>{parts[0]} <span className="text-primary">{parts.slice(1).join(' ')}</span></>;
+        }
+        const mid = Math.ceil(name.length / 2);
+        return <>{name.substring(0, mid)}<span className="text-primary">{name.substring(mid)}</span></>;
+    };
+
     return (
         <nav className="navbar">
             <div className="navbar-container">
                 {/* Logo */}
                 <Link to="/" className="navbar-logo">
-                    <Wrench size={24} className="logo-icon" />
-                    <span className="logo-text">Sis<span className="text-primary">-Tec</span></span>
+                    {businessLogo ? (
+                        <img src={businessLogo} alt="Logo" className="logo-img-navbar" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: 'var(--radius-sm)' }} />
+                    ) : (
+                        <Wrench size={24} className="logo-icon" />
+                    )}
+                    <span className="logo-text">{renderBusinessName()}</span>
                 </Link>
 
                 {/* Mobile menu button */}
@@ -44,6 +64,13 @@ export default function Navbar() {
                             onClick={() => setMenuOpen(false)}
                         >
                             Inicio
+                        </Link>
+                        <Link
+                            to="/rastrear"
+                            className={`nav-link ${isActive('/rastrear') ? 'active' : ''}`}
+                            onClick={() => setMenuOpen(false)}
+                        >
+                            Rastrear
                         </Link>
                         <a
                             href="/#servicios"

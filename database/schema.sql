@@ -268,7 +268,7 @@ INSERT INTO users (
     role, is_active, email_verified
 ) VALUES (
     'admin@systeck.com',
-    '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    '$2a$10$5HjXkF/XpIdTcLEzlKG8ZeSVY33xY.YINlb6K1O6wwt03ljX3CiZm',
     'Administrador',
     'Sistema',
     'admin',

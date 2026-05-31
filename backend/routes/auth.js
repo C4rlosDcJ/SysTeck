@@ -4,8 +4,10 @@ const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const { auth } = require('../middleware/auth');
 
+const { authLimiter } = require('../middleware/rateLimiter');
+
 // Registro
-router.post('/register', [
+router.post('/register', authLimiter, [
     body('email').isEmail().withMessage('Email inválido'),
     body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
     body('first_name').notEmpty().withMessage('El nombre es requerido'),
@@ -13,7 +15,7 @@ router.post('/register', [
 ], authController.register);
 
 // Login
-router.post('/login', [
+router.post('/login', authLimiter, [
     body('email').isEmail().withMessage('Email inválido'),
     body('password').notEmpty().withMessage('La contraseña es requerida')
 ], authController.login);

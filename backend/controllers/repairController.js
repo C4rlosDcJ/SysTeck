@@ -229,7 +229,10 @@ exports.create = async (req, res) => {
         warranty_expires, battery_health, screen_status, account_status, technical_observations, technician_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-            ticketNumber, finalCustomerId, device_type_id, brand_id || null, brand_other || null,
+            ticketNumber, finalCustomerId, 
+            (device_type_id === 'other' || !device_type_id) ? null : device_type_id,
+            (brand_id === 'other' || !brand_id) ? null : brand_id,
+            brand_other || null,
             model, color, storage_capacity, serial_number, imei, device_password, accessories_received,
             physical_condition, existing_damage, JSON.stringify(function_checklist), problem_description,
             service_requested, service_id || null, priority || 'normal', estimated_delivery || null,
@@ -312,7 +315,13 @@ exports.update = async (req, res) => {
         for (const field of allowedFields) {
             if (updates[field] !== undefined) {
                 setClauses.push(`${field} = ?`);
-                values.push(field === 'function_checklist' ? JSON.stringify(updates[field]) : updates[field]);
+                let val = updates[field];
+                if (field === 'function_checklist') {
+                    val = JSON.stringify(val);
+                } else if ((field === 'brand_id' || field === 'device_type_id') && val === 'other') {
+                    val = null;
+                }
+                values.push(val);
             }
         }
 

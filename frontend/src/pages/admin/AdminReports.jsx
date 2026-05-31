@@ -27,15 +27,13 @@ const STATUS_COLORS = {
     received: '#3b82f6',
     diagnosing: '#8b5cf6',
     waiting_approval: '#f59e0b',
-    waiting_parts: '#78716c',
+    waiting_parts: '#6b7280',
     repairing: '#ef4444',
     quality_check: '#06b6d4',
-    ready: '#22c55e',
-    delivered: '#84cc16',
-    cancelled: '#6b7280',
+    ready: '#10b981',
+    delivered: '#22c55e',
+    cancelled: '#9ca3af',
 };
-
-const CHART_COLORS = ['#e63358', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#f97316'];
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -43,7 +41,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             <div className="chart-tooltip">
                 {label && <p className="tooltip-label">{label}</p>}
                 {payload.map((p, i) => (
-                    <p key={i} className="tooltip-value" style={{ color: p.color || '#e63358' }}>
+                    <p key={i} className="tooltip-value" style={{ color: p.color || 'var(--color-primary)' }}>
                         {p.name}: {p.name === 'Ingresos' ? formatCurrency(p.value) : p.value}
                     </p>
                 ))}
@@ -79,7 +77,7 @@ export default function AdminReports() {
     if (loading) return (
         <div className="loading-state">
             <div className="spinner" />
-            <p>Generando reportes...</p>
+            <p>Generando reportes comerciales...</p>
         </div>
     );
 
@@ -111,17 +109,17 @@ export default function AdminReports() {
             <header className="page-header reports-header">
                 <div>
                     <h1>Análisis y Reportes</h1>
-                    <p>Resumen del rendimiento del negocio</p>
+                    <p className="text-muted">Resumen del rendimiento financiero y operativo del negocio</p>
                 </div>
-                <button onClick={fetchData} className="btn btn-secondary btn-sm">
-                    <RefreshCw size={14} /> Actualizar
+                <button onClick={fetchData} className="btn btn-secondary">
+                    <RefreshCw size={14} /> Actualizar Datos
                 </button>
             </header>
 
             {/* ── KPI Row ── */}
             <div className="kpi-row">
                 <div className="kpi-tile">
-                    <div className="kpi-tile-icon" style={{ background: 'rgba(230,51,88,0.12)', color: '#e63358' }}>
+                    <div className="kpi-tile-icon" style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.15)' }}>
                         <DollarSign size={20} />
                     </div>
                     <div className="kpi-tile-body">
@@ -137,7 +135,7 @@ export default function AdminReports() {
                 </div>
 
                 <div className="kpi-tile">
-                    <div className="kpi-tile-icon" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>
+                    <div className="kpi-tile-icon" style={{ background: 'rgba(var(--color-primary-rgb), 0.08)', color: 'var(--color-primary)', borderColor: 'rgba(var(--color-primary-rgb), 0.15)' }}>
                         <Wrench size={20} />
                     </div>
                     <div className="kpi-tile-body">
@@ -148,18 +146,18 @@ export default function AdminReports() {
                 </div>
 
                 <div className="kpi-tile">
-                    <div className="kpi-tile-icon" style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}>
-                        <TrendingUp size={20} />
+                    <div className="kpi-tile-icon" style={{ background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.15)' }}>
+                        <Users size={20} />
                     </div>
                     <div className="kpi-tile-body">
                         <span className="kpi-tile-label">Total de clientes</span>
                         <span className="kpi-tile-value">{data?.totalCustomers ?? 0}</span>
-                        <span className="kpi-tile-sub">registrados</span>
+                        <span className="kpi-tile-sub">registrados activos</span>
                     </div>
                 </div>
 
                 <div className="kpi-tile">
-                    <div className="kpi-tile-icon" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
+                    <div className="kpi-tile-icon" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.15)' }}>
                         <Award size={20} />
                     </div>
                     <div className="kpi-tile-body">
@@ -177,31 +175,31 @@ export default function AdminReports() {
                     <div className="report-card-header">
                         <div>
                             <h2>Tendencia de Ingresos</h2>
-                            <p>Últimos 6 meses</p>
+                            <p className="text-muted">Últimos 6 meses de facturación</p>
                         </div>
                     </div>
                     {revenueData.length > 0 ? (
                         <div className="chart-area">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={revenueData} barSize={32}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                                     <XAxis
                                         dataKey="month"
-                                        stroke="var(--color-text-muted)"
-                                        tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
+                                        stroke="var(--color-text-secondary)"
+                                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
                                         axisLine={false}
                                         tickLine={false}
                                     />
                                     <YAxis
-                                        stroke="var(--color-text-muted)"
-                                        tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
+                                        stroke="var(--color-text-secondary)"
+                                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
                                         tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
                                         axisLine={false}
                                         tickLine={false}
                                         width={48}
                                     />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                                    <Bar dataKey="Ingresos" fill="#e63358" radius={[4, 4, 0, 0]} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--dash-hover-glow)' }} />
+                                    <Bar dataKey="Ingresos" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -216,7 +214,7 @@ export default function AdminReports() {
                 <div className="report-card">
                     <div className="report-card-header">
                         <h2>Estado de Reparaciones</h2>
-                        <span className="report-total">{totalRepairs} total</span>
+                        <span className="report-total">{totalRepairs} órdenes</span>
                     </div>
                     <div className="status-breakdown">
                         {Object.entries(statusSummary).filter(([, v]) => v >= 0).map(([key, count]) => {
@@ -246,7 +244,7 @@ export default function AdminReports() {
                         <h2>Distribución Visual</h2>
                     </div>
                     {pieData.length > 0 ? (
-                        <div className="chart-area chart-area--sm">
+                        <div className="chart-area chart-area--sm" style={{ marginBottom: 'var(--sp-2)' }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
@@ -257,7 +255,7 @@ export default function AdminReports() {
                                         dataKey="value"
                                     >
                                         {pieData.map((entry, i) => (
-                                            <Cell key={i} fill={entry.color} stroke="transparent" />
+                                            <Cell key={i} fill={entry.color} stroke="var(--color-bg-card)" strokeWidth={1} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={<CustomTooltip />} />
@@ -288,23 +286,23 @@ export default function AdminReports() {
                         <div className="chart-area chart-area--sm">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart layout="vertical" data={data.topServices} barSize={16}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
                                     <XAxis
                                         type="number"
-                                        stroke="var(--color-text-muted)"
-                                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
+                                        stroke="var(--color-text-secondary)"
+                                        tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }}
                                         axisLine={false} tickLine={false}
                                     />
                                     <YAxis
                                         dataKey="name"
                                         type="category"
-                                        stroke="var(--color-text-muted)"
-                                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
+                                        stroke="var(--color-text-secondary)"
+                                        tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }}
                                         axisLine={false} tickLine={false}
-                                        width={90}
+                                        width={95}
                                     />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                                    <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Cantidad" />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--dash-hover-glow)' }} />
+                                    <Bar dataKey="count" fill="var(--color-primary)" radius={[0, 4, 4, 0]} name="Cantidad" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -317,7 +315,7 @@ export default function AdminReports() {
                 <div className="report-card report-card--full">
                     <div className="report-card-header">
                         <h2>Rendimiento de Técnicos</h2>
-                        <span className="report-total">{technicians.length} técnicos</span>
+                        <span className="report-total">{technicians.length} registrados</span>
                     </div>
                     {technicians.length > 0 ? (
                         <div className="tech-table-wrap">
@@ -334,12 +332,18 @@ export default function AdminReports() {
                                     {technicians.map(tech => {
                                         const total = (tech.completed || 0) + (tech.in_progress || 0);
                                         const rate = total > 0 ? Math.round((tech.completed / total) * 100) : 0;
+                                        
+                                        // Dynamic class based on success rate
+                                        let rateClass = 'rate-low';
+                                        if (rate >= 80) rateClass = 'rate-high';
+                                        else if (rate >= 50) rateClass = 'rate-mid';
+
                                         return (
                                             <tr key={tech.id}>
                                                 <td>
                                                     <div className="tech-cell">
                                                         <div className="tech-avatar-sm">
-                                                            {tech.first_name?.charAt(0)}{tech.last_name?.charAt(0)}
+                                                            {tech.first_name?.charAt(0).toUpperCase()}{tech.last_name?.charAt(0).toUpperCase()}
                                                         </div>
                                                         <span>{tech.first_name} {tech.last_name}</span>
                                                     </div>
@@ -347,8 +351,10 @@ export default function AdminReports() {
                                                 <td><span className="badge-count success">{tech.completed ?? 0}</span></td>
                                                 <td><span className="badge-count warning">{tech.in_progress ?? 0}</span></td>
                                                 <td>
-                                                    <div className="rate-bar">
-                                                        <div className="rate-fill" style={{ width: `${rate}%` }} />
+                                                    <div className="rate-bar-container">
+                                                        <div className="rate-track">
+                                                            <div className={`rate-fill ${rateClass}`} style={{ width: `${rate}%` }} />
+                                                        </div>
                                                         <span className="rate-label">{rate}%</span>
                                                     </div>
                                                 </td>
@@ -359,7 +365,7 @@ export default function AdminReports() {
                             </table>
                         </div>
                     ) : (
-                        <p className="text-muted">No hay técnicos registrados.</p>
+                        <p className="text-muted" style={{ padding: 'var(--sp-4) 0', textAlign: 'center' }}>No hay técnicos registrados activos.</p>
                     )}
                 </div>
             </div>

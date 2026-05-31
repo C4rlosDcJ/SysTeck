@@ -1,13 +1,16 @@
 /* =====================================================
-   POS Page — Point of Sale Interface
+   POS Page — Point of Sale Interface (Premium)
    ===================================================== */
 
 .pos-layout {
     display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 0;
-    height: calc(100vh - 0px);
+    grid-template-columns: 1fr 400px;
+    gap: var(--sp-4);
+    height: calc(100vh - 40px);
     overflow: hidden;
+    padding: var(--sp-4);
+    background: radial-gradient(circle at 100% 0%, var(--color-primary-muted) 0%, transparent 40%),
+                radial-gradient(circle at 0% 100%, rgba(59,130,246,0.04) 0%, transparent 40%);
 }
 
 @media (max-width: 1100px) {
@@ -23,13 +26,18 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-right: 1px solid var(--color-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
 }
 
 .pos-catalog-header {
-    padding: var(--sp-4) var(--sp-5);
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg);
+    padding: var(--sp-5) var(--sp-6);
+    border-bottom: 1px solid var(--glass-border);
+    background: transparent;
     position: sticky;
     top: 0;
     z-index: 5;
@@ -85,10 +93,10 @@
 .pos-categories {
     display: flex;
     gap: var(--sp-2);
-    padding: var(--sp-3) var(--sp-5);
+    padding: var(--sp-3) var(--sp-6);
     overflow-x: auto;
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg);
+    border-bottom: 1px solid var(--glass-border);
+    background: transparent;
 }
 
 .pos-categories::-webkit-scrollbar { height: 3px; }
@@ -129,15 +137,17 @@
 }
 
 .pos-product-card {
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--sp-3);
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
+    gap: var(--sp-2);
     position: relative;
     overflow: hidden;
 }
@@ -155,9 +165,9 @@
 }
 
 .pos-product-card:hover {
-    border-color: var(--color-primary);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    border-color: var(--cat-color, var(--color-primary));
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--cat-color, var(--color-primary-muted));
 }
 
 .pos-product-card:hover::before { opacity: 1; }
@@ -214,15 +224,16 @@
 
 /* Service items in POS */
 .pos-service-card {
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--sp-3);
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
+    gap: var(--sp-2);
 }
 
 .pos-service-card:hover {
@@ -237,17 +248,18 @@
 
 /* ─── Repair Cards in POS ─── */
 .pos-repair-card {
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--sp-3);
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
+    gap: var(--sp-2);
     position: relative;
-    border-left: 3px solid #3b82f6;
+    border-left: 4px solid #3b82f6;
 }
 
 .pos-repair-card:hover {
@@ -393,9 +405,12 @@
 .pos-cart {
     display: flex;
     flex-direction: column;
-    background: var(--color-bg-card);
-    border-left: 1px solid var(--color-border);
-    height: calc(100vh - 0px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
 }
 
@@ -722,12 +737,12 @@
     justify-content: center;
     gap: var(--sp-2);
     transition: all var(--transition-fast);
-    box-shadow: 0 4px 15px rgba(230, 51, 88, 0.3);
+    box-shadow: 0 4px 15px rgba(var(--color-primary-rgb), 0.3);
 }
 
 .pos-checkout-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(230, 51, 88, 0.4);
+    box-shadow: 0 6px 20px rgba(var(--color-primary-rgb), 0.4);
 }
 
 .pos-checkout-btn:disabled {

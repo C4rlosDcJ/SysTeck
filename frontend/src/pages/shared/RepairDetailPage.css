@@ -73,7 +73,7 @@
 
 .highlight-card {
     border-color: var(--color-primary-muted);
-    background: linear-gradient(to right, rgba(230,51,88,0.02), transparent);
+    background: linear-gradient(to right, rgba(var(--color-primary-rgb), 0.02), transparent);
 }
 .warning-card {
     border-color: rgba(245,158,11,0.3);
@@ -112,8 +112,7 @@
 }
 
 .sticky-card {
-    position: sticky;
-    top: var(--sp-8);
+    position: static;
 }
 
 /* ── Card Styles ── */

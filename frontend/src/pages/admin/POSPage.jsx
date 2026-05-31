@@ -5,8 +5,10 @@ import {
     CreditCard, Banknote, ArrowRightLeft, Printer, CheckCircle2,
     User, ShoppingBag, ClipboardList, Hash, AlertCircle
 } from 'lucide-react';
-import { inventoryService, posService, customerService, servicesCatalog } from '../../services/api';
+import { inventoryService, posService, customerService, servicesCatalog, settingsService, repairService } from '../../services/api';
 import { formatCurrency, STATUS_LABELS } from '../../utils/constants';
+import PrintReceipt from '../../components/common/PrintReceipt';
+import SignatureModal from '../../components/common/SignatureModal';
 import './POSPage.css';
 
 export default function POSPage() {
@@ -41,12 +43,15 @@ export default function POSPage() {
     // Receipt modal
     const [showReceipt, setShowReceipt] = useState(false);
     const [lastSale, setLastSale] = useState(null);
+    const [settings, setSettings] = useState({});
+    const [showSigModal, setShowSigModal] = useState(false);
 
     // Toast
     const [toast, setToast] = useState(null);
 
     const searchRef = useRef(null);
     const customerSearchTimeout = useRef(null);
+    const loadedRepairIdRef = useRef(null);
 
     // ─── Load data ───
     useEffect(() => {
@@ -64,11 +69,12 @@ export default function POSPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [catData, prodData, svcData, repairsData] = await Promise.allSettled([
+            const [catData, prodData, svcData, repairsData, settingsData] = await Promise.allSettled([
                 inventoryService.getCategories(),
                 inventoryService.getProducts({ limit: 200 }),
                 servicesCatalog.getAll({ limit: 200 }),
-                posService.getBillableRepairs()
+                posService.getBillableRepairs(),
+                settingsService.getAll()
             ]);
             if (catData.status === 'fulfilled') setCategories(catData.value || []);
             if (prodData.status === 'fulfilled') setProducts(prodData.value?.products || []);
@@ -77,6 +83,7 @@ export default function POSPage() {
                 setServices(Array.isArray(val) ? val : val?.services || []);
             }
             if (repairsData.status === 'fulfilled') setBillableRepairs(repairsData.value || []);
+            if (settingsData.status === 'fulfilled') setSettings(settingsData.value || {});
         } catch (err) {
             console.error('Error loading POS data:', err);
         } finally {
@@ -85,13 +92,16 @@ export default function POSPage() {
     };
 
     const loadRepairFromURL = async (repairId) => {
+        if (loadedRepairIdRef.current === repairId) return;
+        loadedRepairIdRef.current = repairId;
         try {
             const repair = await posService.getRepairForPOS(repairId);
             if (repair) {
                 addRepairToCart(repair);
-                // Clean URL param
-                searchParams.delete('repair_id');
-                setSearchParams(searchParams, { replace: true });
+                // Clean URL param safely without mutating state directly
+                const newParams = new URLSearchParams(searchParams);
+                newParams.delete('repair_id');
+                setSearchParams(newParams, { replace: true });
             }
         } catch (err) {
             console.error('Error loading repair for POS:', err);
@@ -162,13 +172,6 @@ export default function POSPage() {
     const addRepairToCart = (repair) => {
         const key = `r-${repair.id}`;
 
-        // Check if already in cart
-        const existing = cart.find(i => i.key === key);
-        if (existing) {
-            showToast('Esta reparación ya está en el carrito', 'error');
-            return;
-        }
-
         // Auto-set customer from repair
         if (repair.customer_id && !selectedCustomer) {
             setSelectedCustomer({
@@ -211,8 +214,14 @@ export default function POSPage() {
             isRepair: true
         });
 
-        setCart(prev => [...prev, ...items]);
-        showToast(`Reparación ${repair.ticket_number} agregada`);
+        setCart(prev => {
+            const existing = prev.find(i => i.key === key);
+            if (existing) {
+                return prev;
+            }
+            showToast(`Reparación ${repair.ticket_number} agregada`);
+            return [...prev, ...items];
+        });
     };
 
     const updateQuantity = (key, delta) => {
@@ -293,6 +302,18 @@ export default function POSPage() {
             return;
         }
 
+        // Si hay una reparación vinculada en el carrito, requerimos la firma del cliente
+        if (linkedRepair) {
+            setShowSigModal(true);
+            return;
+        }
+
+        // De lo contrario, cobro directo tradicional
+        await completeCheckout(null);
+    };
+
+    const completeCheckout = async (signatureData) => {
+        setShowSigModal(false);
         try {
             const saleData = {
                 customer_id: selectedCustomer?.id || null,
@@ -308,10 +329,17 @@ export default function POSPage() {
                 discount: parseFloat(discount) || 0,
                 payment_method: paymentMethod,
                 amount_received: paymentMethod === 'cash' ? parseFloat(amountReceived) : total,
-                notes: null
+                notes: signatureData ? 'Cobrado en POS con firma de conformidad' : (linkedRepair ? 'Cobrado en POS sin firma de conformidad' : null)
             };
 
             const result = await posService.createSale(saleData);
+            
+            // Si hay reparación vinculada, actualizar estado en backend a 'delivered' con la firma
+            if (linkedRepair) {
+                const note = signatureData ? 'Equipo entregado al cliente con firma (cobrado en POS)' : 'Equipo entregado al cliente (sin firma - cobrado en POS)';
+                await repairService.updateStatus(linkedRepair.id, 'delivered', note, null, signatureData);
+            }
+
             const saleDetail = await posService.getSaleById(result.sale.id);
             setLastSale(saleDetail);
             setShowReceipt(true);
@@ -736,92 +764,21 @@ export default function POSPage() {
             </div>
 
             {/* ═══ Receipt Modal ═══ */}
-            {showReceipt && lastSale && (
-                <div className="modal-overlay" onClick={() => setShowReceipt(false)}>
-                    <div className="modal receipt-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="receipt-content" id="receipt-printable">
-                            <div className="receipt-header">
-                                <h3>SysTeck</h3>
-                                <p>Sistema de Gestión de Reparaciones</p>
-                                <p style={{ fontWeight: 600 }}>Ticket: {lastSale.sale_number}</p>
-                                <p>{new Date(lastSale.created_at).toLocaleString('es-MX')}</p>
-                                {lastSale.customer_first_name && (
-                                    <p>Cliente: {lastSale.customer_first_name} {lastSale.customer_last_name}</p>
-                                )}
-                                <p>Cajero: {lastSale.cashier_first_name} {lastSale.cashier_last_name}</p>
-                                {lastSale.repair_ticket && (
-                                    <p style={{ fontWeight: 600, color: '#3b82f6' }}>
-                                        Reparación: {lastSale.repair_ticket}
-                                    </p>
-                                )}
-                            </div>
+            <PrintReceipt
+                isOpen={showReceipt}
+                onClose={() => setShowReceipt(false)}
+                data={lastSale}
+                type="pos"
+                settings={settings}
+            />
 
-                            <div className="receipt-items">
-                                {lastSale.items?.map((item, i) => (
-                                    <div key={i} className="receipt-item">
-                                        <span className="receipt-item-desc">
-                                            {item.quantity}x {item.description}
-                                        </span>
-                                        <span className="receipt-item-total">
-                                            {formatCurrency(item.total)}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="receipt-totals">
-                                <div className="receipt-total-row">
-                                    <span>Subtotal:</span>
-                                    <span>{formatCurrency(lastSale.subtotal)}</span>
-                                </div>
-                                {parseFloat(lastSale.discount) > 0 && (
-                                    <div className="receipt-total-row">
-                                        <span>Descuento:</span>
-                                        <span>-{formatCurrency(lastSale.discount)}</span>
-                                    </div>
-                                )}
-                                <div className="receipt-total-row grand-total">
-                                    <span>TOTAL:</span>
-                                    <span>{formatCurrency(lastSale.total)}</span>
-                                </div>
-                                <div className="receipt-total-row">
-                                    <span>Método:</span>
-                                    <span>
-                                        {lastSale.payment_method === 'cash' ? 'Efectivo' :
-                                         lastSale.payment_method === 'card' ? 'Tarjeta' : 'Transferencia'}
-                                    </span>
-                                </div>
-                                {lastSale.payment_method === 'cash' && (
-                                    <>
-                                        <div className="receipt-total-row">
-                                            <span>Recibido:</span>
-                                            <span>{formatCurrency(lastSale.amount_received)}</span>
-                                        </div>
-                                        <div className="receipt-total-row">
-                                            <span>Cambio:</span>
-                                            <span>{formatCurrency(lastSale.change_amount)}</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="receipt-footer">
-                                <p>¡Gracias por tu compra!</p>
-                                <p>Conserve este ticket como comprobante</p>
-                            </div>
-                        </div>
-
-                        <div className="receipt-actions">
-                            <button className="btn btn-secondary" onClick={() => setShowReceipt(false)}>
-                                Cerrar
-                            </button>
-                            <button className="btn btn-primary" onClick={() => window.print()}>
-                                <Printer size={16} /> Imprimir
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <SignatureModal
+                isOpen={showSigModal}
+                onClose={() => setShowSigModal(false)}
+                onSave={completeCheckout}
+                title="Confirmar Entrega de Equipo"
+                description="Por favor firme para confirmar la recepción y entrega de conformidad de su equipo."
+            />
 
             {/* Toast */}
             {toast && (

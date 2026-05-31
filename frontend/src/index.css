@@ -8,7 +8,8 @@
   /* Primary */
   --color-primary: #e63358;
   --color-primary-dark: #c42040;
-  --color-primary-muted: rgba(230, 51, 88, 0.12);
+  --color-primary-rgb: 230, 51, 88;
+  --color-primary-muted: rgba(var(--color-primary-rgb), 0.12);
 
   /* Backgrounds */
   --color-bg: #111111;
@@ -96,7 +97,45 @@
   --transition-slow: 0.4s ease;
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-border: var(--color-border);
-  --shadow-glow: 0 0 16px rgba(230, 51, 88, 0.25);
+  --shadow-glow: 0 0 16px rgba(var(--color-primary-rgb), 0.25);
+
+  /* Dashboard-specific variables (Dark Theme) */
+  --dash-card-gradient-end: rgba(26, 26, 26, 0.85);
+  --dash-header-bg: rgba(26, 26, 26, 0.35);
+  --dash-title-from: #ffffff;
+  --dash-title-to: #a8a8a8;
+  --dash-hover-glow: rgba(255, 255, 255, 0.12);
+  --dash-card-hover-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.7);
+  --dash-table-row-hover: rgba(255, 255, 255, 0.02);
+  --dash-subtle-overlay: rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme='light'] {
+  --color-bg: #f9fafb;
+  --color-bg-card: #ffffff;
+  --color-bg-elevated: #f3f4f6;
+  --color-bg-input: #ffffff;
+
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-strong: rgba(0, 0, 0, 0.15);
+
+  --color-text: #1f2937;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #9ca3af;
+
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 0 16px rgba(var(--color-primary-rgb), 0.15);
+
+  /* Dashboard-specific variables (Light Theme) */
+  --dash-card-gradient-end: rgba(243, 244, 246, 0.65);
+  --dash-header-bg: rgba(255, 255, 255, 0.75);
+  --dash-title-from: #111827;
+  --dash-title-to: #4b5563;
+  --dash-hover-glow: rgba(0, 0, 0, 0.04);
+  --dash-card-hover-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.08);
+  --dash-table-row-hover: rgba(0, 0, 0, 0.02);
+  --dash-subtle-overlay: rgba(0, 0, 0, 0.01);
 }
 
 /* Reset */

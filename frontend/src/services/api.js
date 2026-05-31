@@ -278,6 +278,21 @@ export const uploadService = {
     deleteImage: (imageId) => fetchAPI(`/uploads/${imageId}`, { method: 'DELETE' })
 };
 
+// Public Service (sin auth)
+export const publicService = {
+    trackRepair: async (ticket) => {
+        const response = await fetch(`${API_URL}/public/track/${encodeURIComponent(ticket)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Error al buscar la reparación');
+        return data;
+    }
+};
+
+// Search Service (Admin)
+export const searchService = {
+    globalSearch: (query) => fetchAPI(`/search?q=${encodeURIComponent(query)}`)
+};
+
 export default {
     auth: authService,
     repairs: repairService,
@@ -287,5 +302,8 @@ export default {
     settings: settingsService,
     uploads: uploadService,
     inventory: inventoryService,
-    pos: posService
+    pos: posService,
+    public: publicService,
+    search: searchService
 };
+

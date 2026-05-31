@@ -68,6 +68,21 @@ async function dbInit() {
             console.warn(`[DB-INIT] ADVERTENCIA: No se encontró el archivo ${posMigrationPath}`);
         }
 
+        // 6. Crear tabla activity_logs si no existe
+        console.log(`[DB-INIT] Verificando existencia de la tabla "activity_logs"...`);
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                user_id INT,
+                user_email VARCHAR(255),
+                action VARCHAR(255) NOT NULL,
+                details TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        `);
+        console.log(`[DB-INIT] Tabla activity_logs verificada/creada.`);
+
         console.log(`[DB-INIT] ✅ Base de datos "${dbName}" inicializada correctamente.`);
 
     } catch (error) {

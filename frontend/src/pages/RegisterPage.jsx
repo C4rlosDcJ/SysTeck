@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
     Wrench,
     Mail,
@@ -30,6 +31,7 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { register } = useAuth();
+    const { businessLogo, businessName } = useTheme();
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -69,14 +71,32 @@ export default function RegisterPage() {
         }
     };
 
+    const renderBusinessName = () => {
+        const name = businessName || 'Sys-Teck';
+        if (name.includes('-')) {
+            const parts = name.split('-');
+            return <>{parts[0]}<span className="text-primary">-{parts.slice(1).join('-')}</span></>;
+        }
+        if (name.includes(' ')) {
+            const parts = name.split(' ');
+            return <>{parts[0]} <span className="text-primary">{parts.slice(1).join(' ')}</span></>;
+        }
+        const mid = Math.ceil(name.length / 2);
+        return <>{name.substring(0, mid)}<span className="text-primary">{name.substring(mid)}</span></>;
+    };
+
     return (
         <div className="auth-page">
             <div className="auth-container">
                 <div className="auth-visual">
                     <div className="auth-visual-content">
                         <div className="auth-logo">
-                            <Wrench size={28} className="logo-icon" />
-                            <span className="logo-text">Sis<span className="text-primary">-Tec</span></span>
+                            {businessLogo ? (
+                                <img src={businessLogo} alt="Logo" className="logo-img-auth" style={{ width: '36px', height: '36px', objectFit: 'contain', borderRadius: 'var(--radius-sm)' }} />
+                            ) : (
+                                <Wrench size={28} className="logo-icon" />
+                            )}
+                            <span className="logo-text">{renderBusinessName()}</span>
                         </div>
                         <h1>Únete a Sys-Teck</h1>
                         <p>Crea tu cuenta y obtén acceso a todas las ventajas de nuestro servicio de reparación</p>

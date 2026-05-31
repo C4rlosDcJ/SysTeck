@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { repairService } from '../../services/api';
-import Sidebar from '../../components/Sidebar';
 import {
     Search,
     Filter,
@@ -22,6 +21,14 @@ const statusLabels = {
     ready: 'Listo para Entrega',
     delivered: 'Entregado',
     cancelled: 'Cancelado'
+};
+
+const getProgressPercent = (status) => {
+    const steps = ['received', 'diagnosing', 'waiting_approval', 'waiting_parts', 'repairing', 'quality_check', 'ready', 'delivered'];
+    const index = steps.indexOf(status);
+    if (index === -1) return 0;
+    if (status === 'cancelled') return 0;
+    return Math.round(((index + 1) / steps.length) * 100);
 };
 
 export default function RepairsListPage() {
@@ -58,86 +65,92 @@ export default function RepairsListPage() {
     });
 
     return (
-        <div className="dashboard-layout">
-            <Sidebar />
-            <main className="dashboard-main">
-                <header className="page-header">
-                    <div>
-                        <h1>Mis Reparaciones</h1>
-                        <p className="text-muted">Historial y seguimiento de tus dispositivos</p>
-                    </div>
-                    <button onClick={fetchRepairs} className="btn btn-secondary">
-                        <RefreshCw size={18} />
-                        Actualizar
-                    </button>
-                </header>
-
-                {/* Filtros */}
-                <div className="filters-bar">
-                    <div className="search-box">
-                        <Search size={18} className="search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por ticket, modelo..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input"
-                        />
-                    </div>
-                    <div className="filter-group">
-                        <Filter size={18} />
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="select"
-                        >
-                            <option value="all">Todos los estados</option>
-                            {Object.entries(statusLabels).map(([key, label]) => (
-                                <option key={key} value={key}>{label}</option>
-                            ))}
-                        </select>
-                    </div>
+        <div className="repairs-page-container animate-fadeIn">
+            <header className="page-header" style={{ marginBottom: 'var(--sp-6)' }}>
+                <div>
+                    <h1 style={{ fontSize: 'var(--font-2xl)', fontWeight: 700 }}>Mis Reparaciones</h1>
+                    <p className="text-muted">Consulta el historial completo y seguimiento de tus dispositivos</p>
                 </div>
+                <button onClick={fetchRepairs} className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                    <RefreshCw size={16} />
+                    Actualizar Lista
+                </button>
+            </header>
 
-                {/* Lista de reparaciones */}
-                <div className="repairs-container">
-                    {loading ? (
-                        <div className="loading-state">
-                            <div className="spinner"></div>
-                            <p>Cargando reparaciones...</p>
+            {/* Filtros */}
+            <div className="filters-bar-premium">
+                <div className="search-box-premium">
+                    <Search size={18} className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por ticket, marca, modelo..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="input"
+                    />
+                </div>
+                <div className="filter-group-premium">
+                    <Filter size={16} />
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="select"
+                    >
+                        <option value="all">Todos los estados</option>
+                        {Object.entries(statusLabels).map(([key, label]) => (
+                            <option key={key} value={key}>{label}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Lista de reparaciones */}
+            <div className="repairs-list-wrapper">
+                {loading ? (
+                    <div className="loading-state">
+                        <div className="spinner"></div>
+                        <p>Cargando tus reparaciones...</p>
+                    </div>
+                ) : filteredRepairs.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-icon">
+                            <Smartphone size={48} />
                         </div>
-                    ) : filteredRepairs.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-icon">
-                                <Smartphone size={48} />
-                            </div>
-                            <h3>No se encontraron reparaciones</h3>
-                            <p>{searchTerm || statusFilter !== 'all' ? 'Intenta con otros filtros' : 'Aún no tienes reparaciones registradas'}</p>
-                        </div>
-                    ) : (
-                        <div className="repairs-grid">
-                            {filteredRepairs.map((repair) => (
-                                <div key={repair.id} className="repair-card-full">
-                                    <div className="card-header">
-                                        <span className="ticket-number">{repair.ticket_number}</span>
+                        <h3>No se encontraron registros</h3>
+                        <p>{searchTerm || statusFilter !== 'all' ? 'Intenta con otros términos o filtros' : 'Aún no posees reparaciones registradas en la plataforma'}</p>
+                    </div>
+                ) : (
+                    <div className="repairs-cards-grid">
+                        {filteredRepairs.map((repair) => {
+                            const progress = getProgressPercent(repair.status);
+                            return (
+                                <div key={repair.id} className="repair-grid-card">
+                                    <div className="card-top-header">
+                                        <span className="ticket-tag">{repair.ticket_number}</span>
                                         <span className={`status-badge status-${repair.status}`}>
                                             {statusLabels[repair.status]}
                                         </span>
                                     </div>
-                                    <div className="card-body">
-                                        <h3>{repair.device_type_name}</h3>
-                                        <p className="device-info">
-                                            {repair.brand_name || repair.brand_other} - {repair.model}
-                                        </p>
+                                    <div className="card-main-body">
+                                        <h3>{repair.device_type_name} {repair.brand_name || repair.brand_other}</h3>
+                                        <p className="model-info">{repair.model}</p>
                                         {repair.problem_description && (
-                                            <p className="problem-excerpt">
-                                                {repair.problem_description.substring(0, 100)}
-                                                {repair.problem_description.length > 100 ? '...' : ''}
+                                            <p className="problem-text-excerpt">
+                                                {repair.problem_description.substring(0, 85)}
+                                                {repair.problem_description.length > 85 ? '...' : ''}
                                             </p>
                                         )}
-                                        <div className="card-meta">
+                                        
+                                        <div className="progress-bar-indicator">
+                                            <div className="bar-track">
+                                                <div className="bar-fill" style={{ width: `${progress}%` }}></div>
+                                            </div>
+                                            <span className="progress-text">Progreso: {progress}%</span>
+                                        </div>
+
+                                        <div className="meta-footer-details">
                                             <span className="meta-date">
-                                                {new Date(repair.created_at).toLocaleDateString('es-MX', {
+                                                Registrado: {new Date(repair.created_at).toLocaleDateString('es-MX', {
                                                     day: 'numeric',
                                                     month: 'short',
                                                     year: 'numeric'
@@ -150,15 +163,15 @@ export default function RepairsListPage() {
                                             )}
                                         </div>
                                     </div>
-                                    <Link to={`/dashboard/reparaciones/${repair.id}`} className="card-action">
-                                        Ver detalle <ChevronRight size={16} />
+                                    <Link to={`/dashboard/reparaciones/${repair.id}`} className="view-detail-card-action">
+                                        Ver Seguimiento Completo <ChevronRight size={14} />
                                     </Link>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </main>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

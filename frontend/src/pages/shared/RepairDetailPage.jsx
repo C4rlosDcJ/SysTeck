@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { repairService, userService, settingsService, uploadService, BACKEND_URL } from '../../services/api';
+import { repairService, userService, settingsService, uploadService, posService, BACKEND_URL } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate } from '../../utils/constants';
 import {
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import SignatureModal from '../../components/common/SignatureModal';
 import { generateServiceTicket } from '../../utils/pdfGenerator';
+import PrintReceipt from '../../components/common/PrintReceipt';
 import './RepairDetailPage.css';
 
 export default function RepairDetailPage() {
@@ -34,6 +35,9 @@ export default function RepairDetailPage() {
     const [uploadingImages, setUploadingImages] = useState(false);
     const [showSigModal, setShowSigModal] = useState(false);
     const [sigType, setSigType] = useState(null);
+    const [showPrintReceipt, setShowPrintReceipt] = useState(false);
+    const [receiptType, setReceiptType] = useState('repair');
+    const [receiptData, setReceiptData] = useState(null);
 
     const [isEditingTechnical, setIsEditingTechnical] = useState(false);
     const [technicalData, setTechnicalData] = useState({});
@@ -106,14 +110,54 @@ export default function RepairDetailPage() {
         try {
             setUpdatingStatus(true);
             if (sigType === 'approval') {
-                await repairService.updateStatus(id, 'repairing', 'Cotización aprobada por el cliente con firma', technicalData.estimated_delivery, signatureData);
+                const note = signatureData ? 'Cotización aprobada por el cliente con firma' : 'Cotización aprobada por el cliente (sin firma)';
+                await repairService.updateStatus(id, 'repairing', note, technicalData.estimated_delivery, signatureData);
                 alert('¡Reparación aprobada correctamente!');
             } else if (sigType === 'delivery') {
-                await repairService.updateStatus(id, 'delivered', 'Equipo entregado al cliente', null, signatureData);
-                alert('¡Equipo entregado y garantía activada!');
+                const note = signatureData ? 'Equipo entregado al cliente con firma' : 'Equipo entregado al cliente (sin firma)';
+                await repairService.updateStatus(id, 'delivered', note, null, signatureData);
+                
+                // Cobro automático si no está pagada y tiene costo restante
+                const balance = parseFloat(repair.total_cost) - parseFloat(repair.advance_payment || 0);
+                if (repair.payment_status !== 'paid' && balance > 0) {
+                    try {
+                        const device = `${repair.brand_name || repair.brand_other || ''} ${repair.model || ''}`.trim();
+                        const serviceName = repair.service_name || repair.service_requested || 'Reparación';
+                        const description = `${serviceName} — ${device} (${repair.ticket_number})`;
+
+                        const saleData = {
+                            customer_id: repair.customer_id || null,
+                            repair_id: repair.id,
+                            items: [{
+                                product_id: null,
+                                service_id: null,
+                                description: `Cobro automático de reparación: ${description}`,
+                                quantity: 1,
+                                unit_price: Math.max(0, balance),
+                                discount: 0
+                            }],
+                            discount: 0,
+                            payment_method: 'cash',
+                            amount_received: Math.max(0, balance),
+                            notes: 'Cobrado automáticamente al entregar equipo'
+                        };
+                        const saleResult = await posService.createSale(saleData);
+                        const saleDetail = await posService.getSaleById(saleResult.sale.id);
+                        
+                        setReceiptData(saleDetail);
+                        setReceiptType('pos');
+                        setShowPrintReceipt(true);
+                        alert('¡Equipo entregado, garantía activada y cobrado automáticamente en POS!');
+                    } catch (posErr) {
+                        console.error('Error al cobrar automáticamente en POS:', posErr);
+                        alert('El equipo se entregó pero hubo un error al registrar el cobro en el POS: ' + posErr.message);
+                    }
+                } else {
+                    alert('¡Equipo entregado y garantía activada!');
+                }
             }
             await fetchRepairData();
-        } catch (err) { alert('Error al guardar firma: ' + err.message); } 
+        } catch (err) { alert('Error al actualizar estado: ' + err.message); } 
         finally { setUpdatingStatus(false); }
     };
 
@@ -145,9 +189,19 @@ export default function RepairDetailPage() {
 
             if (newStatus !== repair.status) {
                 if (newStatus === 'delivered') {
+                    const balance = parseFloat(repair.total_cost) - parseFloat(repair.advance_payment || 0);
+                    if (repair.payment_status !== 'paid' && balance > 0) {
+                        navigate(`/admin/pos?repair_id=${repair.id}`);
+                        setIsEditingCosts(false);
+                        setIsEditingTechnical(false);
+                        setUpdatingStatus(false);
+                        return;
+                    }
                     setSigType('delivery');
                     setShowSigModal(true);
-                    setIsEditingCosts(false); setIsEditingTechnical(false); setUpdatingStatus(false);
+                    setIsEditingCosts(false);
+                    setIsEditingTechnical(false);
+                    setUpdatingStatus(false);
                     await fetchRepairData();
                     return;
                 }
@@ -222,10 +276,15 @@ export default function RepairDetailPage() {
                         </div>
                     </div>
                     <div className="detail-header-actions">
-                        {(repair.status === 'ready' || repair.status === 'delivered') && (
-                            <button onClick={handlePrintTicket} className="btn btn-secondary">
-                                <Printer size={16} /> Imprimir Ticket
-                            </button>
+                        {(isAdmin || user?.role === 'technician') && (
+                            <>
+                                <button onClick={handlePrintTicket} className="btn btn-secondary">
+                                    <Printer size={16} /> PDF Orden
+                                </button>
+                                <button onClick={() => { setReceiptType('repair'); setReceiptData(repair); setShowPrintReceipt(true); }} className="btn btn-secondary">
+                                    <Printer size={16} /> Ticket
+                                </button>
+                            </>
                         )}
                         <span className={`badge big-badge status-${repair.status}`}>
                             {STATUS_LABELS[repair.status]}
@@ -555,6 +614,7 @@ export default function RepairDetailPage() {
             </div>
 
             <SignatureModal isOpen={showSigModal} onClose={() => setShowSigModal(false)} onSave={handleSignatureSave} title={sigType === 'approval' ? 'Aprobar Cotización' : 'Confirmar Entrega'} description="..." />
+            <PrintReceipt isOpen={showPrintReceipt} onClose={() => setShowPrintReceipt(false)} data={receiptData || repair} type={receiptType} settings={settings} />
         </div>
     );
 }

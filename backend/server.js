@@ -1,9 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const { limiter } = require('./middleware/rateLimiter');
+const activityLogger = require('./middleware/activityLogger');
 require('dotenv').config();
 
 const app = express();
+
+// Helmet.js para cabeceras de seguridad HTTP
+app.use(helmet({
+    crossOriginResourcePolicy: false, // Permitir cargar imágenes locales en frontend
+}));
+
+// Rate limiting general
+app.use('/api/', limiter);
 
 // Middleware
 app.use(cors({
@@ -16,6 +27,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Servir archivos estáticos (uploads)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Activity logger para operaciones CRUD
+app.use('/api', activityLogger);
+
 // Rutas de la API
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/repairs', require('./routes/repairs'));
@@ -26,6 +40,8 @@ app.use('/api/uploads', require('./routes/uploads'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/pos', require('./routes/pos'));
+app.use('/api/public', require('./routes/public'));
+app.use('/api/search', require('./routes/search'));
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {

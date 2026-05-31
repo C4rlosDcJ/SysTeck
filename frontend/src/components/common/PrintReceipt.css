@@ -1,0 +1,252 @@
+/* =====================================================
+   PrintReceipt — Styles for thermal ticket receipt
+   ===================================================== */
+
+.print-receipt-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: var(--sp-4);
+    animation: fadeIn 0.2s ease;
+}
+
+.print-receipt-modal {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-2xl);
+    animation: slideUp 0.3s ease;
+}
+
+.print-receipt-actions {
+    display: flex;
+    gap: var(--sp-2);
+    padding: var(--sp-4);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+}
+
+.print-receipt-actions button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+}
+
+.receipt-print-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--sp-6);
+    display: flex;
+    justify-content: center;
+    background: #e2e8f0; /* Contrast bg behind the virtual receipt paper */
+}
+
+/* Simulated Thermal Paper */
+.thermal-receipt {
+    background: #fff;
+    color: #111;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    width: 80mm;
+    padding: 15mm 8mm;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+}
+
+.receipt-header-info {
+    text-align: center;
+    margin-bottom: var(--sp-2);
+}
+
+.receipt-header-info h2 {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: var(--sp-1);
+    color: #000;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.receipt-header-info h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin: var(--sp-2) 0;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.receipt-header-info p {
+    margin: 1px 0;
+    font-size: 11px;
+    color: #333;
+}
+
+.divider-dashed {
+    border-top: 1px dashed #000;
+    margin: 8px 0;
+    width: 100%;
+}
+
+.receipt-section {
+    margin: var(--sp-2) 0;
+}
+
+.receipt-section p {
+    margin: 2px 0;
+}
+
+.bold {
+    font-weight: bold;
+    color: #000;
+}
+
+.italic {
+    font-style: italic;
+}
+
+/* Costs Table */
+.costs-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cost-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.cost-row.discount {
+    color: #22c55e;
+}
+
+.cost-row.total-row {
+    font-size: 13px;
+    margin: 4px 0;
+}
+
+.cost-row.balance-row {
+    font-size: 14px;
+    margin-top: 4px;
+    border-top: 1px double #000;
+    padding-top: 4px;
+}
+
+/* Items List */
+.receipt-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.receipt-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.item-desc {
+    flex: 1;
+    padding-right: var(--sp-2);
+}
+
+.item-price {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* Signatures */
+.signature-area {
+    text-align: center;
+    margin: var(--sp-4) 0;
+}
+
+.signature-img {
+    max-width: 150px;
+    height: auto;
+    margin: var(--sp-2) auto 0;
+    display: block;
+    mix-blend-mode: multiply;
+}
+
+/* Footer Notes */
+.receipt-footer-notes {
+    text-align: center;
+    font-size: 10px;
+    color: #555;
+    margin-top: var(--sp-4);
+}
+
+.receipt-footer-notes p {
+    margin: 4px 0;
+}
+
+/* Print Overrides */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    .print-receipt-overlay {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        padding: 0;
+        margin: 0;
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    .print-receipt-modal {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        width: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    .print-receipt-actions {
+        display: none !important;
+    }
+
+    .receipt-print-area {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    .thermal-receipt {
+        visibility: visible;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        box-shadow: none !important;
+        padding: 0 5mm 5mm 5mm !important;
+        margin: 0 !important;
+    }
+
+    .thermal-receipt * {
+        visibility: visible;
+    }
+}

@@ -5,66 +5,118 @@
     min-height: 100vh;
 }
 
-/* ── Status chip filter bar ── */
+/* Status chips container (tab style) */
 .status-chips {
     display: flex;
     gap: var(--sp-2);
     flex-wrap: wrap;
-    margin-bottom: var(--sp-4);
+    margin-bottom: var(--sp-5);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    padding: var(--sp-2);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }
 
 .chip {
-    padding: var(--sp-1) var(--sp-3);
-    border-radius: var(--radius-full);
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--radius-md);
     font-size: var(--font-xs);
     font-weight: 600;
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
+    background: transparent;
+    border: 1px solid transparent;
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all var(--transition-fast) ease;
     white-space: nowrap;
 }
 
 .chip:hover {
-    border-color: var(--color-border-strong);
     color: var(--color-text);
+    background: var(--color-bg-elevated);
 }
 
-/* Active chip — generic */
-.chip--active {
-    background: var(--color-primary-muted);
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+/* Active chip — generic and per-status premium design */
+.chip--active, .chip.chip--active:hover {
+    background: rgba(var(--color-primary-rgb), 0.1) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.15);
 }
 
-/* Per-status active tints */
-.chip--received.chip--active     { background: rgba(59,130,246,0.12);  border-color: #3b82f6; color: #60a5fa; }
-.chip--diagnosing.chip--active   { background: rgba(139,92,246,0.12);  border-color: #8b5cf6; color: #a78bfa; }
-.chip--waiting_approval.chip--active { background: rgba(245,158,11,0.12); border-color: #f59e0b; color: #fbbf24; }
-.chip--waiting_parts.chip--active    { background: rgba(120,113,108,0.12); border-color: #78716c; color: #a8a29e; }
-.chip--repairing.chip--active    { background: rgba(239,68,68,0.12);   border-color: #ef4444; color: #f87171; }
-.chip--quality_check.chip--active { background: rgba(6,182,212,0.12);  border-color: #06b6d4; color: #22d3ee; }
-.chip--ready.chip--active        { background: rgba(34,197,94,0.12);   border-color: #22c55e; color: #4ade80; }
-.chip--delivered.chip--active    { background: rgba(132,204,22,0.12);  border-color: #84cc16; color: #a3e635; }
-.chip--cancelled.chip--active    { background: rgba(107,114,128,0.12); border-color: #6b7280; color: #9ca3af; }
-
-/* ── Search bar ── */
+/* Search bar styling */
 .repairs-search {
-    margin-bottom: var(--sp-4);
+    margin-bottom: var(--sp-6);
     max-width: 480px;
 }
 
-/* ── Table-specific cell styles ── */
+.repairs-search .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.repairs-search .search-icon {
+    position: absolute;
+    left: var(--sp-4);
+    color: var(--color-text-muted);
+}
+
+.repairs-search .input {
+    padding-left: var(--sp-10);
+    height: 44px;
+    border-radius: var(--radius-lg);
+    width: 100%;
+}
+
+/* Table Card Container */
+.table-container {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.repairs-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.repairs-table th {
+    padding: var(--sp-4) var(--sp-5);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid var(--color-border);
+    background: rgba(0, 0, 0, 0.05);
+    font-size: var(--font-sm);
+}
+
+.repairs-table td {
+    padding: var(--sp-5);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+.repairs-table tr:last-child td {
+    border-bottom: none;
+}
+
+.repairs-table tr:hover td {
+    background: rgba(255, 255, 255, 0.01);
+}
+
+/* Row elements */
 .repairs-ticket {
     font-family: monospace;
-    font-size: var(--font-xs);
+    font-size: var(--font-sm);
     font-weight: 700;
-    color: var(--color-text);
-    background: var(--color-bg-elevated);
-    padding: 2px var(--sp-2);
+    color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.08);
+    padding: var(--sp-1) var(--sp-3);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.15);
     white-space: nowrap;
 }
 
@@ -75,19 +127,19 @@
 }
 
 .repairs-client-avatar {
-    width: 28px; height: 28px;
-    border-radius: var(--radius-sm);
+    width: 36px; height: 36px;
+    border-radius: var(--radius-md);
     background: var(--color-primary-muted);
     color: var(--color-primary);
     display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 700;
+    font-size: var(--font-xs); font-weight: 700;
     flex-shrink: 0;
 }
 
 .repairs-client-name {
     font-size: var(--font-sm);
-    font-weight: 500;
-    line-height: 1.3;
+    font-weight: 600;
+    color: var(--color-text);
 }
 
 .repairs-client-email {
@@ -105,7 +157,8 @@
 
 .repairs-device-type {
     font-size: var(--font-sm);
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--color-text);
 }
 
 .repairs-device-model {
@@ -113,9 +166,30 @@
     color: var(--color-text-secondary);
 }
 
+/* Custom Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-xs);
+    font-weight: 600;
+}
+
+.status-badge.status-received { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
+.status-badge.status-diagnosing { background: rgba(139, 92, 246, 0.1); color: #a78bfa; }
+.status-badge.status-waiting_approval { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+.status-badge.status-waiting_parts { background: rgba(120, 113, 108, 0.1); color: #a8a29e; }
+.status-badge.status-repairing { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+.status-badge.status-quality_check { background: rgba(6, 182, 212, 0.1); color: #22d3ee; }
+.status-badge.status-ready { background: rgba(34, 197, 94, 0.1); color: #4ade80; }
+.status-badge.status-delivered { background: rgba(132, 204, 22, 0.1); color: #a3e635; }
+.status-badge.status-cancelled { background: rgba(107, 114, 128, 0.1); color: #9ca3af; }
+
 .repairs-cost {
     font-weight: 700;
     font-size: var(--font-sm);
+    color: var(--color-text);
     white-space: nowrap;
 }
 
@@ -125,15 +199,52 @@
     white-space: nowrap;
 }
 
+/* Responsive Table to Cards conversion on mobile */
 @media (max-width: 1024px) {
-    /* Hide less critical columns on medium screens */
     .repairs-table .repairs-date { display: none; }
 }
 
 @media (max-width: 768px) {
     .repairs-page { padding: var(--sp-4); }
-    .status-chips { gap: var(--sp-1); }
-    .chip { font-size: 10px; padding: 2px var(--sp-2); }
+    .status-chips { gap: var(--sp-1); padding: var(--sp-1); }
+    .chip { font-size: 10px; padding: var(--sp-1) var(--sp-2); }
+    
+    /* Convert table to card list */
+    .table-container { background: transparent; border: none; box-shadow: none; overflow: visible; }
+    .repairs-table thead { display: none; }
+    .repairs-table, .repairs-table tbody, .repairs-table tr, .repairs-table td { display: block; width: 100%; }
+    
+    .repairs-table tr {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        margin-bottom: var(--sp-4);
+        padding: var(--sp-4);
+        position: relative;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .repairs-table td {
+        border-bottom: none;
+        padding: var(--sp-2) 0;
+    }
+    
+    .repairs-table td:first-child {
+        padding-top: 0;
+        margin-bottom: var(--sp-2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .repairs-table td:last-child {
+        padding-bottom: 0;
+        margin-top: var(--sp-3);
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        justify-content: flex-end;
+    }
+    
     .repairs-client-email { display: none; }
     .repairs-client-avatar { display: none; }
 }

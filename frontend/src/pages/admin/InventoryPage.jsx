@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react';
 import {
     Package, Plus, Search, Edit3, Trash2, X, ArrowDownCircle,
-    ArrowUpCircle, AlertTriangle, DollarSign, PackageX, Boxes
+    ArrowUpCircle, AlertTriangle, DollarSign, PackageX, Boxes,
+    Tag, Palette, Check, FolderPlus
 } from 'lucide-react';
 import { inventoryService } from '../../services/api';
 import { formatCurrency } from '../../utils/constants';
 import './InventoryPage.css';
+
+// Predefined palette colors for category indicators
+const CATEGORY_COLORS = [
+    '#3b82f6', // Azul
+    '#10b981', // Verde
+    '#f59e0b', // Naranja/Amarillo
+    '#ef4444', // Rojo
+    '#a855f7', // Púrpura
+    '#ec4899', // Rosa
+    '#06b6d4', // Cyan
+    '#6b7280'  // Gris
+];
 
 export default function InventoryPage() {
     const [products, setProducts] = useState([]);
@@ -19,6 +32,7 @@ export default function InventoryPage() {
     // Modals
     const [showProductModal, setShowProductModal] = useState(false);
     const [showStockModal, setShowStockModal] = useState(false);
+    const [showCategoryCreator, setShowCategoryCreator] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [stockProduct, setStockProduct] = useState(null);
 
@@ -32,6 +46,10 @@ export default function InventoryPage() {
     const [stockForm, setStockForm] = useState({
         type: 'in', quantity: '', notes: ''
     });
+
+    // Category Creator State
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
 
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState(null);
@@ -53,12 +71,13 @@ export default function InventoryPage() {
             setStats(statsData);
         } catch (err) {
             console.error('Error loading inventory:', err);
+            showToast('Error al cargar datos del inventario', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    // ─── Filtered products ───
+    // Filtered products
     const filtered = products.filter(p => {
         const matchSearch = !search ||
             p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -68,7 +87,7 @@ export default function InventoryPage() {
         return matchSearch && matchCategory && matchStock;
     });
 
-    // ─── Product CRUD ───
+    // Product CRUD
     const openNewProduct = () => {
         setEditingProduct(null);
         setForm({ name: '', sku: '', barcode: '', description: '', category_id: '', purchase_price: '', sale_price: '', stock: '0', min_stock: '5' });
@@ -125,7 +144,44 @@ export default function InventoryPage() {
         }
     };
 
-    // ─── Stock Movement ───
+    // Category Creation
+    const handleCreateCategory = async (e) => {
+        e.preventDefault();
+        if (!newCategoryName.trim()) {
+            showToast('Por favor, indica un nombre de categoría', 'error');
+            return;
+        }
+        setSaving(true);
+        try {
+            const response = await inventoryService.createCategory({
+                name: newCategoryName.trim(),
+                color: newCategoryColor
+            });
+            showToast('Categoría creada exitosamente');
+            // Refresh categories list
+            const updatedCategories = await inventoryService.getCategories();
+            setCategories(updatedCategories || []);
+            // Set the new category in the form
+            if (response && response.id) {
+                setForm(prev => ({ ...prev, category_id: response.id }));
+            } else {
+                // Fallback matching by name
+                const matching = (updatedCategories || []).find(c => c.name.toLowerCase() === newCategoryName.trim().toLowerCase());
+                if (matching) {
+                    setForm(prev => ({ ...prev, category_id: matching.id }));
+                }
+            }
+            // Reset state
+            setNewCategoryName('');
+            setShowCategoryCreator(false);
+        } catch (err) {
+            showToast(err.message || 'Error al guardar categoría', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Stock Movement
     const openStockModal = (product) => {
         setStockProduct(product);
         setStockForm({ type: 'in', quantity: '', notes: '' });
@@ -170,9 +226,15 @@ export default function InventoryPage() {
             <div className="page-header">
                 <div>
                     <h1>Inventario</h1>
-                    <p>Gestión de productos y stock</p>
+                    <p className="text-muted">Administra el stock y cataloga tus productos</p>
                 </div>
                 <div className="header-actions">
+                    <button className="btn btn-secondary" onClick={() => {
+                        setNewCategoryName('');
+                        setShowCategoryCreator(true);
+                    }}>
+                        <FolderPlus size={16} /> Crear Categoría
+                    </button>
                     <button className="btn btn-primary" onClick={openNewProduct} id="btn-new-product">
                         <Plus size={16} /> Nuevo Producto
                     </button>
@@ -182,7 +244,7 @@ export default function InventoryPage() {
             {/* Stats */}
             <div className="inventory-stats">
                 <div className="inv-stat-card">
-                    <div className="inv-stat-icon" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+                    <div className="inv-stat-icon" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8' }}>
                         <Package size={22} />
                     </div>
                     <div>
@@ -191,7 +253,7 @@ export default function InventoryPage() {
                     </div>
                 </div>
                 <div className="inv-stat-card">
-                    <div className="inv-stat-icon" style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24' }}>
+                    <div className="inv-stat-icon" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
                         <AlertTriangle size={22} />
                     </div>
                     <div>
@@ -200,7 +262,7 @@ export default function InventoryPage() {
                     </div>
                 </div>
                 <div className="inv-stat-card">
-                    <div className="inv-stat-icon" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+                    <div className="inv-stat-icon" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>
                         <PackageX size={22} />
                     </div>
                     <div>
@@ -209,7 +271,7 @@ export default function InventoryPage() {
                     </div>
                 </div>
                 <div className="inv-stat-card">
-                    <div className="inv-stat-icon" style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
+                    <div className="inv-stat-icon" style={{ background: 'rgba(34,197,94,0.12)', color: '#10b981' }}>
                         <DollarSign size={22} />
                     </div>
                     <div>
@@ -221,7 +283,7 @@ export default function InventoryPage() {
 
             {/* Filters */}
             <div className="inventory-table-actions">
-                <div className="filters-bar" style={{ marginBottom: 0 }}>
+                <div className="filters-bar">
                     <div className="search-box">
                         <Search size={16} className="search-icon" />
                         <input
@@ -233,14 +295,15 @@ export default function InventoryPage() {
                         />
                     </div>
                     <div className="filter-group">
-                        <select className="select select-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+                        <select className="select" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
                             <option value="">Todas las categorías</option>
                             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
                     <button
-                        className={`btn btn-sm ${filterLowStock ? 'btn-primary' : 'btn-secondary'}`}
+                        className={`btn ${filterLowStock ? 'btn-primary' : 'btn-secondary'}`}
                         onClick={() => setFilterLowStock(!filterLowStock)}
+                        style={{ height: '40px' }}
                     >
                         <AlertTriangle size={14} /> Bajo Stock
                     </button>
@@ -267,44 +330,46 @@ export default function InventoryPage() {
                                 <td colSpan="7">
                                     <div className="empty-state">
                                         <Package size={36} className="empty-icon" />
-                                        <h3>Sin productos</h3>
-                                        <p>Agrega tu primer producto</p>
+                                        <h3>Sin productos encontrados</h3>
+                                        <p>Agrega productos o modifica los criterios de búsqueda.</p>
                                     </div>
                                 </td>
                             </tr>
                         ) : (
                             filtered.map(p => (
                                 <tr key={p.id}>
-                                    <td><span className="font-mono" style={{ fontSize: 'var(--font-xs)' }}>{p.sku}</span></td>
+                                    <td><span className="font-mono" style={{ fontSize: 'var(--font-xs)', fontWeight: 600 }}>{p.sku || 'N/A'}</span></td>
                                     <td>
-                                        <span style={{ fontWeight: 600 }}>{p.name}</span>
-                                        {p.barcode && <span style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--color-text-muted)' }}>{p.barcode}</span>}
+                                        <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{p.name}</span>
+                                        {p.barcode && <span style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>{p.barcode}</span>}
                                     </td>
                                     <td>
-                                        {p.category_name && (
+                                        {p.category_name ? (
                                             <span className="category-badge">
-                                                <span className="category-dot" style={{ background: p.category_color }}></span>
+                                                <span className="category-dot" style={{ background: p.category_color || 'var(--color-primary)' }}></span>
                                                 {p.category_name}
                                             </span>
+                                        ) : (
+                                            <span className="text-muted" style={{ fontSize: 'var(--font-xs)' }}>Sin categoría</span>
                                         )}
                                     </td>
                                     <td>{formatCurrency(p.purchase_price)}</td>
-                                    <td style={{ fontWeight: 600 }}>{formatCurrency(p.sale_price)}</td>
+                                    <td style={{ fontWeight: 700, color: 'var(--color-text)' }}>{formatCurrency(p.sale_price)}</td>
                                     <td>
                                         <span className={`stock-cell ${p.stock === 0 ? 'stock-out' : p.stock <= p.min_stock ? 'stock-low' : 'stock-ok'}`}>
                                             {p.stock}
                                         </span>
-                                        <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-muted)', marginLeft: 4 }}>/ mín {p.min_stock}</span>
+                                        <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginLeft: 6 }}>/ mín {p.min_stock}</span>
                                     </td>
                                     <td>
                                         <div className="product-actions">
-                                            <button className="btn btn-ghost btn-icon" title="Agregar stock" onClick={() => openStockModal(p)}>
+                                            <button className="btn btn-ghost btn-icon" title="Agregar/Retirar stock" onClick={() => openStockModal(p)}>
                                                 <Boxes size={15} />
                                             </button>
                                             <button className="btn btn-ghost btn-icon" title="Editar" onClick={() => openEditProduct(p)}>
                                                 <Edit3 size={15} />
                                             </button>
-                                            <button className="btn btn-ghost btn-icon" title="Eliminar" onClick={() => handleDeleteProduct(p.id)}>
+                                            <button className="btn btn-ghost btn-icon btn-danger" title="Eliminar" onClick={() => handleDeleteProduct(p.id)}>
                                                 <Trash2 size={15} />
                                             </button>
                                         </div>
@@ -316,44 +381,60 @@ export default function InventoryPage() {
                 </table>
             </div>
 
-            {/* ═══ Product Modal ═══ */}
+            {/* Product Modal */}
             {showProductModal && (
                 <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 580 }}>
                         <div className="modal-header">
                             <h3 className="modal-title">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h3>
                             <button className="modal-close" onClick={() => setShowProductModal(false)}><X size={16} /></button>
                         </div>
                         <div className="product-form">
                             <div className="input-group full-width">
-                                <label>Nombre *</label>
+                                <label>Nombre del Producto *</label>
                                 <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej: Mica templada iPhone 15" id="pf-name" />
                             </div>
+
                             <div className="form-grid">
                                 <div className="input-group">
                                     <label>SKU</label>
-                                    <input className="input" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="Auto-generado" />
+                                    <input className="input" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="Ej. MIC-IPH15" />
                                 </div>
                                 <div className="input-group">
                                     <label>Código de Barras</label>
-                                    <input className="input" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="Opcional" />
+                                    <input className="input" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="Código de barras..." />
                                 </div>
                             </div>
 
-                            <div className="input-group">
-                                <label>Categoría</label>
-                                <div className="category-select-grid">
-                                    {categories.map(c => (
-                                        <button
-                                            key={c.id}
-                                            className={`category-select-pill ${form.category_id == c.id ? 'selected' : ''}`}
-                                            onClick={() => setForm({ ...form, category_id: c.id })}
-                                            type="button"
-                                        >
-                                            {c.name}
-                                        </button>
-                                    ))}
+                            <div className="category-select-container">
+                                <div className="category-select-header">
+                                    <label>Categoría</label>
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost btn-sm"
+                                        style={{ color: 'var(--color-primary)', fontWeight: 600, padding: 0 }}
+                                        onClick={() => setShowCategoryCreator(true)}
+                                    >
+                                        + Nueva Categoría
+                                    </button>
                                 </div>
+                                {categories.length === 0 ? (
+                                    <p className="text-muted" style={{ fontSize: 'var(--font-xs)', padding: 'var(--sp-2) 0' }}>No hay categorías. Crea una usando el botón de arriba.</p>
+                                ) : (
+                                    <div className="category-select-grid">
+                                        {categories.map(c => (
+                                            <button
+                                                key={c.id}
+                                                className={`category-select-pill ${form.category_id == c.id ? 'selected' : ''}`}
+                                                onClick={() => setForm({ ...form, category_id: c.id })}
+                                                type="button"
+                                            >
+                                                <span className="category-dot" style={{ backgroundColor: c.color || 'var(--color-primary)', width: '6px', height: '6px', marginRight: '2px' }} />
+                                                {c.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="form-grid">
@@ -370,7 +451,7 @@ export default function InventoryPage() {
                             <div className="form-grid">
                                 <div className="input-group">
                                     <label>Stock Inicial</label>
-                                    <input className="input" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+                                    <input className="input" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} disabled={editingProduct !== null} />
                                 </div>
                                 <div className="input-group">
                                     <label>Stock Mínimo</label>
@@ -379,14 +460,14 @@ export default function InventoryPage() {
                             </div>
 
                             <div className="input-group">
-                                <label>Descripción</label>
-                                <textarea className="input" rows="2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Descripción del producto..." />
+                                <label>Descripción del Producto</label>
+                                <textarea className="input" rows="2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles o especificaciones..." />
                             </div>
 
                             <div className="flex gap-sm" style={{ justifyContent: 'flex-end', marginTop: 'var(--sp-2)' }}>
                                 <button className="btn btn-secondary" onClick={() => setShowProductModal(false)}>Cancelar</button>
                                 <button className="btn btn-primary" onClick={handleSaveProduct} disabled={saving} id="pf-save">
-                                    {saving ? 'Guardando...' : editingProduct ? 'Actualizar' : 'Crear Producto'}
+                                    {saving ? 'Guardando...' : editingProduct ? 'Actualizar Producto' : 'Crear Producto'}
                                 </button>
                             </div>
                         </div>
@@ -394,7 +475,57 @@ export default function InventoryPage() {
                 </div>
             )}
 
-            {/* ═══ Stock Movement Modal ═══ */}
+            {/* Standalone Category Creator Modal */}
+            {showCategoryCreator && (
+                <div className="modal-overlay" onClick={() => setShowCategoryCreator(false)} style={{ zIndex: 1100 }}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 450 }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Tag className="text-primary" size={20} /> Crear Nueva Categoría
+                            </h3>
+                            <button className="modal-close" onClick={() => setShowCategoryCreator(false)}><X size={16} /></button>
+                        </div>
+                        <form onSubmit={handleCreateCategory} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)', marginTop: 'var(--sp-2)' }}>
+                            <div className="input-group">
+                                <label>Nombre de la Categoría *</label>
+                                <input
+                                    className="input"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="Ej. Pantallas, Accesorios, Herramientas..."
+                                    required
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Palette size={14} /> Color de Indicador
+                                </label>
+                                <div className="color-picker-grid">
+                                    {CATEGORY_COLORS.map(color => (
+                                        <div
+                                            key={color}
+                                            className={`color-option ${newCategoryColor === color ? 'selected' : ''}`}
+                                            style={{ backgroundColor: color, color: color }}
+                                            onClick={() => setNewCategoryColor(color)}
+                                        >
+                                            {newCategoryColor === color && <Check size={12} style={{ color: '#fff', margin: '4px' }} />}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="modal-actions" style={{ marginTop: 'var(--sp-2)' }}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowCategoryCreator(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" disabled={saving}>
+                                    {saving ? 'Guardando...' : 'Crear Categoría'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Stock Movement Modal */}
             {showStockModal && stockProduct && (
                 <div className="modal-overlay" onClick={() => setShowStockModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
@@ -403,7 +534,7 @@ export default function InventoryPage() {
                             <button className="modal-close" onClick={() => setShowStockModal(false)}><X size={16} /></button>
                         </div>
                         <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--sp-3)' }}>
-                            <strong>{stockProduct.name}</strong> — Stock actual: <strong>{stockProduct.stock}</strong>
+                            <strong>{stockProduct.name}</strong> — Stock actual: <strong className="text-primary">{stockProduct.stock}</strong>
                         </p>
 
                         <div className="stock-movement-type">
@@ -435,12 +566,12 @@ export default function InventoryPage() {
                         </div>
 
                         <div className="input-group" style={{ marginBottom: 'var(--sp-3)' }}>
-                            <label>Notas (opcional)</label>
+                            <label>Notas / Razón del movimiento</label>
                             <input
                                 className="input"
                                 value={stockForm.notes}
                                 onChange={(e) => setStockForm({ ...stockForm, notes: e.target.value })}
-                                placeholder="Razón del movimiento..."
+                                placeholder="Ej: Compra a proveedor, desecho..."
                             />
                         </div>
 

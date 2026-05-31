@@ -8,6 +8,8 @@ import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import TrackRepairPage from './pages/TrackRepairPage';
+
 
 // Client Pages
 import ClientDashboard from './pages/client/ClientDashboard';
@@ -19,6 +21,7 @@ import ProfilePage from './pages/client/ProfilePage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRepairs from './pages/admin/AdminRepairs';
 import AdminCustomers from './pages/admin/AdminCustomers';
+import CustomerDetailPage from './pages/admin/CustomerDetailPage';
 import AdminServices from './pages/admin/AdminServices';
 import AdminReports from './pages/admin/AdminReports';
 import SettingsPage from './pages/admin/SettingsPage';
@@ -97,6 +100,7 @@ function AppRoutes() {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/rastrear" element={<TrackRepairPage />} />
       <Route path="/login" element={
         <PublicRoute>
           <LoginPage />
@@ -156,6 +160,11 @@ function AppRoutes() {
           <AdminCustomers />
         </DashboardLayout>
       } />
+      <Route path="/admin/clientes/:id" element={
+        <DashboardLayout adminOnly>
+          <CustomerDetailPage />
+        </DashboardLayout>
+      } />
       <Route path="/admin/servicios" element={
         <DashboardLayout adminOnly>
           <AdminServices />
@@ -198,12 +207,16 @@ function AppRoutes() {
   );
 }
 
+import { ThemeProvider } from './context/ThemeContext';
+
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }
