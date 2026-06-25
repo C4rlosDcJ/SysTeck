@@ -13,24 +13,27 @@
 
 ### Portal del Cliente
 - **Panel de Control Personalizado:** Vista rápida de reparaciones activas y su estado.
-- **Cotizaciones Inteligentes:** Solicita presupuestos detallados con carga de imágenes.
+- **Cotizaciones Inteligentes:** Solicita presupuestos detallados con carga de imágenes de los dispositivos.
 - **Seguimiento en Tiempo Real:** Consulta el progreso de tus dispositivos mediante número de ticket.
 - **Notificaciones Automáticas:** Mantente informado en cada etapa del proceso.
 
-### Panel Administrativo
+### Panel Administrativo y Módulos de Control
 - **Gestión de Reparaciones:** Control total del ciclo de vida del equipo (Recibido -> Diagnóstico -> Reparando -> Listo).
-- **Base de Datos de Clientes:** Historial completo, contactos y estadísticas por usuario.
-- **Catálogo de Servicios:** Administra precios base y tiempos estimados para diferentes tipos de dispositivos.
-- **Reportes y Estadísticas:** Visualiza ingresos, reparaciones completadas y rendimiento mensual.
-- **Configuración Flexible:** Personaliza días de garantía, moneda y más.
+- **Punto de Venta (POS):** Módulo para facturación y cobro rápido de servicios, refacciones y ventas directas.
+- **Control de Inventario:** Catálogo de productos, categorías, niveles de stock, SKU y códigos de barras.
+- **Base de Datos de Clientes:** Historial completo de reparaciones, cotizaciones, compras realizadas y estadísticas detalladas.
+- **Catálogo de Servicios:** Administración de precios base y tiempos estimados por categoría de dispositivo.
+- **Reportes y Estadísticas:** Análisis detallado de ingresos, reparaciones completadas y rendimiento mensual.
+- **Configuración General:** Personalización de datos del negocio, logotipo, días de garantía, moneda y políticas.
 
 ---
 
 ## Diseño y Experiencia de Usuario
 
-- **Estética Premium:** Tema oscuro sofisticado con efectos de glassmorphism.
-- **Interactividad:** Animaciones suaves y transiciones optimizadas con Framer Motion (si aplica) y Lucide Icons.
-- **Responsivo:** Diseño adaptado al 100% para dispositivos móviles y tablets.
+- **Soporte Multi-tema:** Alternancia dinámica entre Tema Claro y Tema Oscuro.
+- **Estética Premium:** Efectos de glassmorphism adaptativos y paleta de colores cohesiva.
+- **Interactividad Avanzada:** Animaciones fluidas basadas en microinteracciones y transiciones modernas.
+- **Responsivo:** Diseño completamente adaptado para smartphones, tablets y computadoras de escritorio.
 
 ---
 
@@ -38,55 +41,57 @@
 
 ### Requisitos Previos
 - **Node.js** (v18.x o superior)
-- **MySQL** (v8.0.x)
+- **MySQL** (v8.0.x o compatible, soporta conexiones SSL)
 - **Git**
 
 ### 1. Clonación del Repositorio
 ```bash
-git clone https://github.com/tu-usuario/systeck.git
+git clone https://github.com/C4rlosDcJ/SysTeck.git
 cd systeck
 ```
 
 ### 2. Configuración de la Base de Datos
-1. Crea una base de datos llamada `systeck`.
-2. Importa el esquema inicial:
+1. Crea una base de datos en tu servidor local o remoto (por ejemplo en Aiven o RDS).
+2. Importa el esquema inicial de tablas e índices desde la carpeta correspondiente:
 ```bash
-mysql -u tu_usuario -p systeck < database/schema.sql
+mysql -u tu_usuario -p nombre_base_datos < database/schema.sql
 ```
 
 ### 3. Backend (API)
+1. Instala las dependencias:
 ```bash
 cd backend
 npm install
-cp .env.example .env
-# Configura tus variables en .env (DB_PASSWORD, JWT_SECRET, etc.)
+```
+2. Crea un archivo `.env` tomando como base `.env.example` y rellena las variables de entorno necesarias:
+   - Configuración de base de datos (host, usuario, contraseña, puerto, nombre de base de datos)
+   - Ajustes de SSL si tu servidor MySQL lo requiere (`MYSQL_ATTR_SSL_CA` o configuración equivalente en el código)
+   - Secretos para JWT y firmas de sesión
+3. Inicia el servidor de desarrollo:
+```bash
 npm run dev
 ```
 
 ### 4. Frontend (UI)
+1. Navega al directorio del cliente e instala las dependencias:
 ```bash
 cd ../frontend
 npm install
+```
+2. Configura las variables de entorno correspondientes para la API (por ejemplo `VITE_API_URL`).
+3. Inicia el servidor de desarrollo local:
+```bash
 npm run dev
 ```
-
----
-
-## Credenciales de Acceso (Demo)
-
-| Rol | Usuario | Contraseña |
-|-----|---------|------------|
-| **Admin** | `admin@systeck.com` | `admin123` |
-| **Cliente** | `cliente@demo.com` | `cliente123` |
 
 ---
 
 ## Stack Tecnológico
 
-- **Frontend:** React 19, Vite, Recharts, Lucide React, CSS Moderno.
-- **Backend:** Node.js, Express, JWT, Express Validator.
-- **Base de Datos:** MySQL (Pool de conexiones con `mysql2/promise`).
-- **Utilidades:** Multer (Uploads), Bcrypt (Seguridad), Nodemailer.
+- **Frontend:** React, Vite, Recharts, Lucide Icons, Vanilla CSS con variables de diseño personalizadas.
+- **Backend:** Node.js, Express, JWT, Express Validator, CORS Dinámico.
+- **Base de Datos:** MySQL (Pool de conexiones con `mysql2/promise` y soporte de certificados SSL).
+- **Despliegue:** Preparado para Vercel (frontend) y Render (backend).
 
 ---
 
@@ -94,38 +99,11 @@ npm run dev
 
 ```text
 SysTeck/
-├── frontend/           # Aplicación SPA (React)
-├── backend/            # API RESTFUL (Node.js)
-├── database/           # Scripts SQL y migraciones
-└── uploads/            # Archivos multimedia subidos
+├── frontend/           # SPA en React y estilos CSS interactivos
+├── backend/            # API REST en Node.js y Express
+├── database/           # Archivos de inicialización SQL
+└── uploads/            # Archivos locales de imágenes (soporte multimedia)
 ```
-
----
-
-## Roadmap - Próximas Funcionalidades
-
-### Métodos de Pago (En Desarrollo)
-Se planea integrar múltiples pasarelas de pago para facilitar las transacciones:
-
-| Proveedor | Estado | Descripción |
-|-----------|--------|-------------|
-| **Stripe** | Planeado | Pagos con tarjeta de crédito/débito internacionales |
-| **PayPal** | Planeado | Opción de pago alternativa para clientes internacionales |
-| **MercadoPago** | Planeado | Pagos locales en LATAM (OXXO, SPEI, tarjetas) |
-| **Pagos en efectivo** | Planeado | Registro manual de pagos en tienda |
-
-#### Funcionalidades de Pagos Planeadas:
-- Anticipo parcial al momento de la recepción
-- Pago del saldo restante al momento de entrega
-- Notificaciones automáticas de pago recibido
-- Facturación electrónica (CFDI para México)
-- Historial de transacciones por cliente
-- Reportes de ingresos y conciliación
-
-### Otras Mejoras Planeadas
-- **Notificaciones Push** - Alertas en tiempo real al cliente sobre su reparación
-- **Inventario de Refacciones** - Control de stock y reordenamiento automático
-- **Multi-sucursal** - Soporte para múltiples ubicaciones
 
 ---
 
@@ -133,4 +111,4 @@ Se planea integrar múltiples pasarelas de pago para facilitar las transacciones
 
 Este proyecto está bajo la licencia **ISC**.
 
-Desarrollado con pasión por **SysTeck** © 2026.
+Desarrollado para **SysTeck** © 2026.
