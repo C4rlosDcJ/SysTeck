@@ -122,7 +122,7 @@ SET @preparedStatement = (SELECT IF(
      WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = @tablename AND COLUMN_NAME = @columnname) > 0,
     'SELECT 1',
     CONCAT('ALTER TABLE ', @tablename, ' ADD COLUMN ', @columnname,
-           " ENUM('pending', 'partial', 'paid') DEFAULT 'pending' AFTER status")
+           ' ENUM(\'pending\', \'partial\', \'paid\') DEFAULT \'pending\' AFTER status')
 ));
 PREPARE alterIfNotExists FROM @preparedStatement;
 EXECUTE alterIfNotExists;
