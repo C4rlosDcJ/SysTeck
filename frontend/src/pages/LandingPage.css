@@ -240,9 +240,14 @@
     border-radius: 20px;
     overflow: hidden;
     border: 1px solid var(--color-border);
-    background: var(--color-bg-card);
+    background: #151515; /* Fondo oscuro constante para que funcione mix-blend-mode: screen */
     box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.5);
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
+}
+
+:root[data-theme='light'] .hero-image-wrapper {
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.15);
 }
 
 .hero-image-wrapper:hover {

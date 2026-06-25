@@ -4,9 +4,15 @@
     left: 0;
     right: 0;
     z-index: 100;
-    background: rgba(23, 23, 23, 0.95);
+    background: var(--glass-bg);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--glass-border);
+    transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+:root[data-theme='light'] .navbar {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.08) !important;
 }
 
 .navbar-container {
