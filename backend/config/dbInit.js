@@ -112,6 +112,19 @@ async function dbInit() {
         console.log(`[DB-INIT] Asegurando que la columna "setting_value" en tabla "settings" soporte datos largos (LONGTEXT)...`);
         await connection.query(`ALTER TABLE settings MODIFY COLUMN setting_value LONGTEXT`);
 
+        // 10. Asegurar que las columnas de la tabla 'sales' tengan la estructura necesaria para pedidos web
+        console.log(`[DB-INIT] Verificando y alterando tabla "sales" para soportar pedidos web...`);
+        try {
+            console.log(`[DB-INIT] Haciendo nullable la columna cashier_id en la tabla sales...`);
+            await connection.query('ALTER TABLE sales MODIFY COLUMN cashier_id INT NULL');
+            
+            console.log(`[DB-INIT] Asegurando que la columna status en sales acepte el estado "pending"...`);
+            await connection.query("ALTER TABLE sales MODIFY COLUMN status ENUM('completed', 'cancelled', 'refunded', 'pending') DEFAULT 'completed'");
+            console.log(`[DB-INIT] Modificaciones de tabla sales aplicadas correctamente.`);
+        } catch (e) {
+            console.error(`[DB-INIT] Error al alterar la tabla sales:`, e.message);
+        }
+
         console.log(`[DB-INIT] ✅ Base de datos "${dbName}" inicializada correctamente.`);
 
     } catch (error) {
