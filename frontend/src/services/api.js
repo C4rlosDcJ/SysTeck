@@ -53,6 +53,16 @@ export const authService = {
     changePassword: (data) => fetchAPI('/auth/change-password', {
         method: 'PUT',
         body: JSON.stringify(data)
+    }),
+
+    forgotPassword: (email) => fetchAPI('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+    }),
+
+    resetPassword: (token, password) => fetchAPI('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password })
     })
 };
 
@@ -83,6 +93,11 @@ export const repairService = {
     addNote: (id, note, isInternal = false) => fetchAPI(`/repairs/${id}/notes`, {
         method: 'POST',
         body: JSON.stringify({ note, is_internal: isInternal })
+    }),
+
+    submitReview: (id, rating, reviewText) => fetchAPI(`/repairs/${id}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ rating, review_text: reviewText })
     }),
 
     delete: (id) => fetchAPI(`/repairs/${id}`, { method: 'DELETE' })
@@ -284,6 +299,11 @@ export const publicService = {
         const response = await fetch(`${API_URL}/public/track/${encodeURIComponent(ticket)}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Error al buscar la reparación');
+        return data;
+    },
+    getTheme: async () => {
+        const response = await fetch(`${API_URL}/public/theme`);
+        const data = await response.json();
         return data;
     }
 };

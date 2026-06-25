@@ -7,7 +7,7 @@ import {
     Wrench, Clock, User, MessageSquare, AlertCircle, CheckCircle2,
     ChevronLeft, Smartphone, CreditCard, ShieldCheck, Send, Plus, X,
     Image as ImageIcon, DollarSign, Save as SaveIcon, ClipboardCheck,
-    Printer, PenTool, Edit3, ShoppingCart
+    Printer, PenTool, Edit3, ShoppingCart, Star
 } from 'lucide-react';
 import SignatureModal from '../../components/common/SignatureModal';
 import { generateServiceTicket } from '../../utils/pdfGenerator';
@@ -46,6 +46,27 @@ export default function RepairDetailPage() {
     const [noteText, setNoteText] = useState('');
     const [isInternal, setIsInternal] = useState(false);
     const [addingNote, setAddingNote] = useState(false);
+
+    // States for client review
+    const [clientRating, setClientRating] = useState(5);
+    const [hoverRating, setHoverRating] = useState(0);
+    const [clientReviewText, setClientReviewText] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        if (!clientRating) return;
+        try {
+            setSubmittingReview(true);
+            await repairService.submitReview(id, clientRating, clientReviewText);
+            alert('¡Muchas gracias por tu reseña!');
+            await fetchRepairData();
+        } catch (err) {
+            alert('Error al enviar reseña: ' + err.message);
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -338,6 +359,82 @@ export default function RepairDetailPage() {
                                 }
                             }} disabled={updatingStatus}><X size={16} /> Rechazar</button>
                         </div>
+                    </div>
+                )}
+
+                {repair.status === 'delivered' && !isAdmin && (
+                    <div className="card success-card" style={{ marginTop: 'var(--sp-2)' }}>
+                        <div className="card-header text-success" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Star size={20} fill={repair.rating ? 'var(--color-primary)' : 'none'} color="var(--color-primary)" />
+                            <h3>{repair.rating ? 'Tu Reseña de la Reparación' : '¡Tu equipo está listo! Califica nuestro servicio'}</h3>
+                        </div>
+                        {repair.rating ? (
+                            <div className="mt-sm">
+                                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                            key={star}
+                                            size={20}
+                                            fill={star <= repair.rating ? '#f59e0b' : 'none'}
+                                            color={star <= repair.rating ? '#f59e0b' : 'var(--color-text-muted)'}
+                                        />
+                                    ))}
+                                </div>
+                                <p style={{ fontStyle: 'italic', color: 'var(--color-text-strong)', fontSize: 'var(--font-sm)', padding: 'var(--sp-2) 0' }}>
+                                    "{repair.review_text || 'Sin comentarios adicionales.'}"
+                                </p>
+                                <p className="text-muted mt-xs" style={{ fontSize: 'var(--font-xs)' }}>
+                                    ¡Gracias por tu opinión! Tu comentario nos ayuda a mejorar y se muestra en nuestra página principal.
+                                </p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleReviewSubmit} className="mt-sm">
+                                <p className="text-muted" style={{ fontSize: 'var(--font-sm)', marginBottom: '12px' }}>
+                                    Queremos conocer tu opinión. Por favor, selecciona una calificación y déjanos un comentario sobre el servicio recibido:
+                                </p>
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center' }}>
+                                    <span style={{ fontSize: 'var(--font-sm)', fontWeight: 600 }}>Calificación:</span>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setClientRating(star)}
+                                                onMouseEnter={() => setHoverRating(star)}
+                                                onMouseLeave={() => setHoverRating(0)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                            >
+                                                <Star
+                                                    size={24}
+                                                    fill={(hoverRating || clientRating) >= star ? '#f59e0b' : 'none'}
+                                                    color={(hoverRating || clientRating) >= star ? '#f59e0b' : 'var(--color-text-muted)'}
+                                                    style={{ transition: 'transform 0.1s' }}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="input-group" style={{ marginBottom: '12px' }}>
+                                    <label>Comentario o Reseña (Opcional)</label>
+                                    <textarea
+                                        className="input"
+                                        placeholder="Ej. Excelente servicio, muy rápidos y profesionales. El equipo quedó como nuevo."
+                                        value={clientReviewText}
+                                        onChange={(e) => setClientReviewText(e.target.value)}
+                                        rows="3"
+                                        style={{ resize: 'vertical', width: '100%', padding: 'var(--sp-2)' }}
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary btn-sm"
+                                    disabled={submittingReview || !clientRating}
+                                    style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}
+                                >
+                                    {submittingReview ? 'Enviando...' : 'Enviar Reseña'}
+                                </button>
+                            </form>
+                        )}
                     </div>
                 )}
             </div>

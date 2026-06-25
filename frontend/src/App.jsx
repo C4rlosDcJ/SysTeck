@@ -9,6 +9,8 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import TrackRepairPage from './pages/TrackRepairPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 
 // Client Pages
@@ -109,6 +111,16 @@ function AppRoutes() {
       <Route path="/register" element={
         <PublicRoute>
           <RegisterPage />
+        </PublicRoute>
+      } />
+      <Route path="/forgot-password" element={
+        <PublicRoute>
+          <ForgotPasswordPage />
+        </PublicRoute>
+      } />
+      <Route path="/reset-password" element={
+        <PublicRoute>
+          <ResetPasswordPage />
         </PublicRoute>
       } />
 

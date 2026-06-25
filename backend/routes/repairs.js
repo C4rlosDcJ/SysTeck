@@ -21,6 +21,9 @@ router.put('/:id', isTechnicianOrAdmin, repairController.update);
 // Cambiar estado (admin/técnico o cliente para aprobar/rechazar)
 router.put('/:id/status', auth, repairController.updateStatus);
 
+// Agregar reseña (cliente)
+router.post('/:id/review', auth, repairController.addReview);
+
 // Agregar nota
 router.post('/:id/notes', repairController.addNote);
 

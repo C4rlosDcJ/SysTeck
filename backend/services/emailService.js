@@ -172,8 +172,46 @@ async function sendEmail(to, template, data) {
   }
 }
 
+// Enviar email de restablecimiento de contraseña
+async function sendPasswordResetEmail(to, token, customer) {
+  try {
+    const businessName = await getBusinessName();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #171717; color: #EDEDED; padding: 20px; border-radius: 10px;">
+        <h1 style="color: #DA0037; text-align: center;">${businessName}</h1>
+        <h2>Restablecimiento de Contraseña</h2>
+        <p>¡Hola ${customer.first_name || 'Usuario'}!</p>
+        <p>Has solicitado restablecer tu contraseña para tu cuenta en <strong>${businessName}</strong>.</p>
+        <p>Por favor, haz clic en el siguiente botón para crear una nueva contraseña. Este enlace expira en 1 hora:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}" style="background: #DA0037; color: #EDEDED; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-weight: bold; display: inline-block;">Restablecer Contraseña</a>
+        </div>
+        <p>Si no solicitaste esto, puedes ignorar este correo de forma segura.</p>
+        <p style="color: #888; font-size: 12px; margin-top: 30px;">Este es un correo automático de ${businessName}, por favor no responder.</p>
+      </div>
+    `;
+
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || `"${businessName}" <noreply@systeck.com>`,
+      to: to,
+      subject: `${businessName} - Restablecer tu contraseña`,
+      html: htmlContent
+    });
+
+    console.log('[EMAIL] Correo de restablecimiento enviado:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('[EMAIL] Error al enviar correo de restablecimiento:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   sendEmail,
+  sendPasswordResetEmail,
   emailTemplates,
   getStatusLabel
 };

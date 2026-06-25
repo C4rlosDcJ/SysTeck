@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 // Limiter para peticiones generales
 exports.limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // Limita cada IP a 100 peticiones por ventana
+    max: 1000, // Limita cada IP a 1000 peticiones por ventana (antes 100)
     standardHeaders: true, // Retorna info de límite en headers de respuesta
     legacyHeaders: false,
     message: {
@@ -14,7 +14,7 @@ exports.limiter = rateLimit({
 // Limiter más estricto para endpoints de autenticación
 exports.authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 15, // Limita cada IP a 15 intentos de login
+    max: 50, // Limita cada IP a 50 intentos de login (antes 15)
     standardHeaders: true,
     legacyHeaders: false,
     message: {

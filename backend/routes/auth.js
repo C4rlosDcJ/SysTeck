@@ -35,4 +35,15 @@ router.put('/change-password', auth, [
     body('new_password').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres')
 ], authController.changePassword);
 
+// Solicitar recuperación de contraseña (Olvidé mi contraseña)
+router.post('/forgot-password', authLimiter, [
+    body('email').isEmail().withMessage('Email inválido')
+], authController.forgotPassword);
+
+// Restablecer contraseña
+router.post('/reset-password', authLimiter, [
+    body('token').notEmpty().withMessage('Token requerido'),
+    body('password').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres')
+], authController.resetPassword);
+
 module.exports = router;

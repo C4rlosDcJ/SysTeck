@@ -70,3 +70,62 @@ exports.trackRepair = async (req, res) => {
         res.status(500).json({ message: 'Error al buscar la reparación.' });
     }
 };
+
+// Obtener configuración de tema (público, sin auth)
+exports.getTheme = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT setting_key, setting_value FROM settings');
+
+        const theme = {
+            accent_color: '#e63358',
+            border_radius: '12px',
+            business_name: 'Sys-Teck',
+            business_logo: '',
+            landing_show_stats: 'true',
+            landing_show_why: 'true',
+            landing_show_services: 'true',
+            landing_show_process: 'true',
+            landing_show_testimonials: 'true',
+            landing_show_cta: 'true',
+            landing_show_contact: 'true'
+        };
+
+        rows.forEach(row => {
+            theme[row.setting_key] = row.setting_value;
+        });
+
+        // Obtener reseñas reales de clientes desde la base de datos
+        let reviews = [];
+        try {
+            const [reviewRows] = await db.query(`
+                SELECT 
+                    CONCAT(u.first_name, ' ', SUBSTRING(u.last_name, 1, 1), '.') as name,
+                    r.review_text as text,
+                    CONCAT(COALESCE(b.name, r.brand_other, 'Equipo'), ' ', r.model) as device,
+                    r.rating
+                FROM repairs r
+                JOIN users u ON r.customer_id = u.id
+                LEFT JOIN brands b ON r.brand_id = b.id
+                WHERE r.rating IS NOT NULL AND r.review_text IS NOT NULL AND r.review_text != ''
+                ORDER BY r.updated_at DESC
+                LIMIT 6
+            `);
+            reviews = reviewRows;
+        } catch (e) {
+            console.warn('[PUBLIC] Error al consultar reseñas de base de datos:', e.message);
+        }
+
+        theme.reviews = reviews;
+
+        res.json(theme);
+    } catch (error) {
+        console.error('[PUBLIC] Error al obtener tema:', error);
+        // Return defaults even on error so the frontend doesn't break
+        res.json({
+            accent_color: '#e63358',
+            border_radius: '12px',
+            business_name: 'Sys-Teck',
+            business_logo: ''
+        });
+    }
+};

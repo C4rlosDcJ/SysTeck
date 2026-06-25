@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
+const emailService = require('../services/emailService');
 
 // Registro de usuario
 exports.register = async (req, res) => {
@@ -188,5 +190,105 @@ exports.getTechnicians = async (req, res) => {
     } catch (error) {
         console.error('[AUTH] Error al obtener técnicos:', error);
         res.status(500).json({ message: 'Error al obtener técnicos.' });
+    }
+};
+
+// Solicitar recuperación de contraseña (Olvidé mi contraseña)
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'El correo electrónico es requerido.' });
+        }
+
+        // Buscar si existe el usuario
+        const [users] = await db.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (users.length === 0) {
+            // Retornar mensaje genérico por seguridad (evita enumeración de usuarios)
+            return res.json({
+                message: 'Si el correo electrónico está registrado, recibirás un enlace de recuperación pronto.'
+            });
+        }
+
+        const user = users[0];
+
+        // Generar token aleatorio
+        const token = crypto.randomBytes(20).toString('hex');
+        
+        // Expiración: 1 hora a partir de ahora
+        const expires = new Date(Date.now() + 3600000); 
+
+        // Guardar token en BD
+        await db.query(
+            'UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?',
+            [token, expires, user.id]
+        );
+
+        // Enviar email
+        const mailResult = await emailService.sendPasswordResetEmail(user.email, token, user);
+
+        if (!mailResult.success) {
+            console.error('[AUTH] No se pudo enviar el correo de restablecimiento:', mailResult.error);
+            // Si falla el envío de correo por SMTP configurado incorrectamente, podemos retornar el token en desarrollo para facilitar las pruebas
+            if (process.env.NODE_ENV === 'development') {
+                return res.json({
+                    message: 'Si el correo electrónico está registrado, recibirás un enlace de recuperación pronto. (Dev-Mode: Error SMTP, token devuelto en respuesta)',
+                    devToken: token
+                });
+            }
+        }
+
+        res.json({
+            message: 'Si el correo electrónico está registrado, recibirás un enlace de recuperación pronto.'
+        });
+    } catch (error) {
+        console.error('[AUTH] Error en forgotPassword:', error);
+        res.status(500).json({ message: 'Error al procesar la solicitud de recuperación.' });
+    }
+};
+
+// Restablecer la contraseña
+exports.resetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body;
+
+        if (!token || !password) {
+            return res.status(400).json({ message: 'Token y contraseña son requeridos.' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+        }
+
+        // Buscar usuario con token válido y que no haya expirado (fecha de expiración mayor a la actual)
+        const [users] = await db.query(
+            'SELECT id FROM users WHERE reset_password_token = ? AND reset_password_expires > NOW()',
+            [token]
+        );
+
+        if (users.length === 0) {
+            return res.status(400).json({ message: 'El token de recuperación es inválido o ha expirado.' });
+        }
+
+        const user = users[0];
+
+        // Encriptar la nueva contraseña
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Actualizar contraseña y limpiar el token
+        await db.query(
+            'UPDATE users SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        res.json({ message: 'Contraseña restablecida exitosamente.' });
+    } catch (error) {
+        console.error('[AUTH] Error en resetPassword:', error);
+        res.status(500).json({ message: 'Error al restablecer la contraseña.' });
     }
 };

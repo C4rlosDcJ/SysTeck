@@ -523,3 +523,39 @@ exports.delete = async (req, res) => {
         res.status(500).json({ message: 'Error al eliminar reparación.' });
     }
 };
+
+// Agregar reseña de reparación (solo clientes, para su propia reparación)
+exports.addReview = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rating, review_text } = req.body;
+
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ message: 'Calificación inválida (debe ser entre 1 y 5).' });
+        }
+
+        // Obtener la reparación
+        const [repairs] = await db.query('SELECT * FROM repairs WHERE id = ?', [id]);
+        if (repairs.length === 0) {
+            return res.status(404).json({ message: 'Reparación no encontrada.' });
+        }
+
+        const repair = repairs[0];
+
+        // Verificar que pertenezca al cliente actual
+        if (repair.customer_id !== req.user.id) {
+            return res.status(403).json({ message: 'No tienes permiso para calificar esta reparación.' });
+        }
+
+        // Guardar reseña
+        await db.query(
+            'UPDATE repairs SET rating = ?, review_text = ? WHERE id = ?',
+            [rating, review_text || '', id]
+        );
+
+        res.json({ message: 'Reseña enviada exitosamente.' });
+    } catch (error) {
+        console.error('[REPAIRS] Error al agregar reseña:', error);
+        res.status(500).json({ message: 'Error al agregar reseña.' });
+    }
+};
