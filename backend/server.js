@@ -55,6 +55,8 @@ app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/pos', require('./routes/pos'));
 app.use('/api/public', require('./routes/public'));
 app.use('/api/search', require('./routes/search'));
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/orders', require('./routes/orders'));
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {

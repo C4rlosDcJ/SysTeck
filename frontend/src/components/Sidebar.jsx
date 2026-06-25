@@ -20,7 +20,9 @@ import {
     Package,
     Search,
     Moon,
-    Sun
+    Sun,
+    ShoppingBag,
+    ClipboardCheck
 } from 'lucide-react';
 import GlobalSearch from './common/GlobalSearch';
 import './Sidebar.css';
@@ -52,6 +54,8 @@ export default function Sidebar({ isOpen, toggleMenu }) {
 
     const clientLinks = [
         { to: '/dashboard', icon: Home, label: 'Dashboard', exact: true },
+        { to: '/dashboard/tienda', icon: ShoppingBag, label: 'Tienda' },
+        { to: '/dashboard/pedidos', icon: Package, label: 'Mis Pedidos' },
         { to: '/dashboard/nueva-cotizacion', icon: FileText, label: 'Nueva Cotización' },
         { to: '/dashboard/reparaciones', icon: ClipboardList, label: 'Mis Reparaciones' },
         { to: '/dashboard/perfil', icon: User, label: 'Mi Perfil' },

@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Wrench, Mail, Lock, Eye, EyeOff, ArrowLeft, Bell, History, Smartphone } from 'lucide-react';
 import './AuthPages.css';
 
 export default function LoginPage() {
+    const [searchParams] = useSearchParams();
+    const redirectUrl = searchParams.get('redirect');
+
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -32,11 +35,11 @@ export default function LoginPage() {
 
         try {
             const response = await login(formData.email, formData.password);
-            // Redirigir según el rol
+            // Redirigir según el rol o parámetro redirect
             if (response.user.role === 'admin') {
-                navigate('/admin');
+                navigate(redirectUrl || '/admin');
             } else {
-                navigate('/dashboard');
+                navigate(redirectUrl || '/dashboard');
             }
         } catch (err) {
             setError(err.message || 'Error al iniciar sesión');

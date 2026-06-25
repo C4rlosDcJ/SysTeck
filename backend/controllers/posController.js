@@ -20,7 +20,7 @@ exports.createSale = async (req, res) => {
 
         const {
             customer_id, repair_id, items, discount = 0,
-            payment_method, amount_received, notes
+            payment_method, amount_received, notes, pending_sale_id
         } = req.body;
 
         if (!items || items.length === 0) {
@@ -39,19 +39,43 @@ exports.createSale = async (req, res) => {
             ? Math.max(0, (parseFloat(amount_received) || 0) - total)
             : 0;
 
-        const saleNumber = generateSaleNumber();
+        let saleId = pending_sale_id;
+        let saleNumber;
 
-        // Insertar cabecera de venta
-        const [saleResult] = await connection.query(
-            `INSERT INTO sales (sale_number, customer_id, repair_id, cashier_id, subtotal, discount, total,
-             payment_method, amount_received, change_amount, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [saleNumber, customer_id || null, repair_id || null, req.user.id,
-             subtotal, discount || 0, total, payment_method || 'cash',
-             amount_received || total, changeAmount, notes || null]
-        );
+        if (pending_sale_id) {
+            // Obtener número de venta existente
+            const [existing] = await connection.query('SELECT sale_number FROM sales WHERE id = ?', [pending_sale_id]);
+            if (existing.length === 0) {
+                return res.status(404).json({ message: 'Venta pendiente no encontrada.' });
+            }
+            saleNumber = existing[0].sale_number;
 
-        const saleId = saleResult.insertId;
+            // Eliminar ítems previos de esta venta pendiente
+            await connection.query('DELETE FROM sale_items WHERE sale_id = ?', [pending_sale_id]);
+
+            // Actualizar la cabecera del registro existente de venta
+            await connection.query(
+                `UPDATE sales SET customer_id = ?, repair_id = ?, cashier_id = ?, subtotal = ?, discount = ?, total = ?,
+                 payment_method = ?, amount_received = ?, change_amount = ?, status = 'completed', notes = ?
+                 WHERE id = ?`,
+                [customer_id || null, repair_id || null, req.user.id,
+                 subtotal, discount || 0, total, payment_method || 'cash',
+                 amount_received || total, changeAmount, notes || null, pending_sale_id]
+            );
+        } else {
+            saleNumber = generateSaleNumber();
+
+            // Insertar cabecera de venta nueva
+            const [saleResult] = await connection.query(
+                `INSERT INTO sales (sale_number, customer_id, repair_id, cashier_id, subtotal, discount, total,
+                 payment_method, amount_received, change_amount, notes, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')`,
+                [saleNumber, customer_id || null, repair_id || null, req.user.id,
+                 subtotal, discount || 0, total, payment_method || 'cash',
+                 amount_received || total, changeAmount, notes || null]
+            );
+            saleId = saleResult.insertId;
+        }
 
         // Insertar ítems y descontar stock
         for (const item of items) {

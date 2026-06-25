@@ -305,12 +305,69 @@ export const publicService = {
         const response = await fetch(`${API_URL}/public/theme`);
         const data = await response.json();
         return data;
+    },
+    getCatalogServices: async (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        const response = await fetch(`${API_URL}/public/catalog/services${query ? `?${query}` : ''}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Error al obtener servicios');
+        return data;
+    },
+    getCatalogProducts: async (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        const response = await fetch(`${API_URL}/public/catalog/products${query ? `?${query}` : ''}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Error al obtener productos');
+        return data;
     }
+};
+
+// Orders Service (authenticated)
+export const orderService = {
+    create: (data) => fetchAPI('/orders', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+    getAll: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return fetchAPI(`/orders${query ? `?${query}` : ''}`);
+    },
+    getById: (id) => fetchAPI(`/orders/${id}`),
+    updateStatus: (id, status, admin_notes) => fetchAPI(`/orders/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status, admin_notes })
+    }),
+    cancel: (id) => fetchAPI(`/orders/${id}/cancel`, { method: 'PUT' }),
+    update: (id, data) => fetchAPI(`/orders/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    }),
+    getStats: () => fetchAPI('/orders/stats')
 };
 
 // Search Service (Admin)
 export const searchService = {
     globalSearch: (query) => fetchAPI(`/search?q=${encodeURIComponent(query)}`)
+};
+
+// AI Service
+export const aiService = {
+    diagnose: (data) => fetchAPI('/ai/diagnose', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+    parseQuote: (description) => fetchAPI('/ai/parse-quote', {
+        method: 'POST',
+        body: JSON.stringify({ description })
+    }),
+    improveNote: (note) => fetchAPI('/ai/improve-note', {
+        method: 'POST',
+        body: JSON.stringify({ note })
+    }),
+    chat: (message, history) => fetchAPI('/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message, history })
+    })
 };
 
 export default {
@@ -324,6 +381,8 @@ export default {
     inventory: inventoryService,
     pos: posService,
     public: publicService,
-    search: searchService
+    search: searchService,
+    ai: aiService,
+    orders: orderService
 };
 

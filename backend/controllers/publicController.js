@@ -129,3 +129,97 @@ exports.getTheme = async (req, res) => {
         });
     }
 };
+
+// =====================================================
+// Catálogo público de servicios (sin auth)
+// =====================================================
+exports.getCatalogServices = async (req, res) => {
+    try {
+        const { device_type_id } = req.query;
+
+        let query = `
+            SELECT s.id, s.name, s.description, s.base_price, s.estimated_time,
+                   s.device_type_id, dt.name as device_type_name, dt.icon as device_type_icon
+            FROM services_catalog s
+            LEFT JOIN device_types dt ON s.device_type_id = dt.id
+            WHERE s.is_active = TRUE
+        `;
+        const params = [];
+
+        if (device_type_id) {
+            query += ' AND (s.device_type_id = ? OR s.device_type_id IS NULL)';
+            params.push(device_type_id);
+        }
+
+        query += ' ORDER BY dt.name, s.name';
+
+        const [services] = await db.query(query, params);
+
+        // Obtener tipos de dispositivo activos para filtros
+        const [deviceTypes] = await db.query(
+            'SELECT id, name, icon FROM device_types WHERE is_active = TRUE ORDER BY name'
+        );
+
+        res.json({ services, deviceTypes });
+    } catch (error) {
+        console.error('[PUBLIC] Error al obtener catálogo de servicios:', error);
+        res.status(500).json({ message: 'Error al obtener servicios.' });
+    }
+};
+
+// =====================================================
+// Catálogo público de productos (sin auth)
+// =====================================================
+exports.getCatalogProducts = async (req, res) => {
+    try {
+        const { category_id, search, page = 1, limit = 24 } = req.query;
+        const offset = (page - 1) * limit;
+
+        let query = `
+            SELECT p.id, p.name, p.description, p.sale_price, p.stock,
+                   p.category_id, pc.name as category_name, pc.color as category_color
+            FROM products p
+            LEFT JOIN product_categories pc ON p.category_id = pc.id
+            WHERE p.is_active = TRUE
+        `;
+        const params = [];
+
+        if (category_id) {
+            query += ' AND p.category_id = ?';
+            params.push(category_id);
+        }
+        if (search) {
+            query += ' AND (p.name LIKE ? OR p.description LIKE ?)';
+            const term = `%${search}%`;
+            params.push(term, term);
+        }
+
+        // Count
+        let countQuery = query.replace(/SELECT p\.id,[\s\S]*?FROM products p/, 'SELECT COUNT(*) as total FROM products p');
+        const [countResult] = await db.query(countQuery, params);
+
+        query += ' ORDER BY p.name ASC LIMIT ? OFFSET ?';
+        params.push(parseInt(limit), parseInt(offset));
+
+        const [products] = await db.query(query, params);
+
+        // Obtener categorías activas para filtros
+        const [categories] = await db.query(
+            'SELECT id, name, color FROM product_categories WHERE is_active = TRUE ORDER BY name'
+        );
+
+        res.json({
+            products,
+            categories,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: countResult[0].total,
+                totalPages: Math.ceil(countResult[0].total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('[PUBLIC] Error al obtener catálogo de productos:', error);
+        res.status(500).json({ message: 'Error al obtener productos.' });
+    }
+};

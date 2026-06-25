@@ -11,6 +11,7 @@ import RegisterPage from './pages/RegisterPage';
 import TrackRepairPage from './pages/TrackRepairPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import PublicStorePage from './pages/PublicStorePage';
 
 
 // Client Pages
@@ -18,6 +19,8 @@ import ClientDashboard from './pages/client/ClientDashboard';
 import NewQuoteForm from './pages/client/NewQuoteForm';
 import RepairsListPage from './pages/client/RepairsListPage';
 import ProfilePage from './pages/client/ProfilePage';
+import ClientStorePage from './pages/client/ClientStorePage';
+import ClientOrdersPage from './pages/client/ClientOrdersPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -32,6 +35,7 @@ import RepairDetailPage from './pages/shared/RepairDetailPage';
 import POSPage from './pages/admin/POSPage';
 import InventoryPage from './pages/admin/InventoryPage';
 import SalesHistoryPage from './pages/admin/SalesHistoryPage';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 
 import './index.css';
 
@@ -103,6 +107,7 @@ function AppRoutes() {
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/rastrear" element={<TrackRepairPage />} />
+      <Route path="/tienda" element={<PublicStorePage />} />
       <Route path="/login" element={
         <PublicRoute>
           <LoginPage />
@@ -148,6 +153,16 @@ function AppRoutes() {
       <Route path="/dashboard/perfil" element={
         <DashboardLayout>
           <ProfilePage />
+        </DashboardLayout>
+      } />
+      <Route path="/dashboard/tienda" element={
+        <DashboardLayout>
+          <ClientStorePage />
+        </DashboardLayout>
+      } />
+      <Route path="/dashboard/pedidos" element={
+        <DashboardLayout>
+          <ClientOrdersPage />
         </DashboardLayout>
       } />
 
@@ -212,6 +227,11 @@ function AppRoutes() {
           <SalesHistoryPage />
         </DashboardLayout>
       } />
+      <Route path="/admin/pedidos" element={
+        <DashboardLayout adminOnly>
+          <AdminOrdersPage />
+        </DashboardLayout>
+      } />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -220,6 +240,7 @@ function AppRoutes() {
 }
 
 import { ThemeProvider } from './context/ThemeContext';
+import AIChatbot from './components/AIChatbot';
 
 function App() {
   return (
@@ -227,6 +248,7 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppRoutes />
+          <AIChatbot />
         </AuthProvider>
       </ThemeProvider>
     </Router>

@@ -5,7 +5,7 @@ import {
     CreditCard, Banknote, ArrowRightLeft, Printer, CheckCircle2,
     User, ShoppingBag, ClipboardList, Hash, AlertCircle
 } from 'lucide-react';
-import { inventoryService, posService, customerService, servicesCatalog, settingsService, repairService } from '../../services/api';
+import { inventoryService, posService, customerService, servicesCatalog, settingsService, repairService, orderService } from '../../services/api';
 import { formatCurrency, STATUS_LABELS } from '../../utils/constants';
 import PrintReceipt from '../../components/common/PrintReceipt';
 import SignatureModal from '../../components/common/SignatureModal';
@@ -15,7 +15,7 @@ export default function POSPage() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     // ─── State ───
-    const [mode, setMode] = useState('products'); // 'products' | 'services' | 'repairs'
+    const [mode, setMode] = useState('products'); // 'products' | 'services' | 'repairs' | 'pending_sales'
     const [products, setProducts] = useState([]);
     const [services, setServices] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -26,6 +26,11 @@ export default function POSPage() {
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [amountReceived, setAmountReceived] = useState('');
     const [loading, setLoading] = useState(true);
+
+    // Pending web sales state
+    const [pendingSales, setPendingSales] = useState([]);
+    const [pendingSearch, setPendingSearch] = useState('');
+    const [loadedPendingSaleId, setLoadedPendingSaleId] = useState(null);
 
     // Billable repairs
     const [billableRepairs, setBillableRepairs] = useState([]);
@@ -69,12 +74,13 @@ export default function POSPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [catData, prodData, svcData, repairsData, settingsData] = await Promise.allSettled([
+            const [catData, prodData, svcData, repairsData, settingsData, pendingSalesData] = await Promise.allSettled([
                 inventoryService.getCategories(),
                 inventoryService.getProducts({ limit: 200 }),
                 servicesCatalog.getAll({ limit: 200 }),
                 posService.getBillableRepairs(),
-                settingsService.getAll()
+                settingsService.getAll(),
+                orderService.getAll({ status: 'pending' })
             ]);
             if (catData.status === 'fulfilled') setCategories(catData.value || []);
             if (prodData.status === 'fulfilled') setProducts(prodData.value?.products || []);
@@ -84,6 +90,7 @@ export default function POSPage() {
             }
             if (repairsData.status === 'fulfilled') setBillableRepairs(repairsData.value || []);
             if (settingsData.status === 'fulfilled') setSettings(settingsData.value || {});
+            if (pendingSalesData.status === 'fulfilled') setPendingSales(pendingSalesData.value?.orders || []);
         } catch (err) {
             console.error('Error loading POS data:', err);
         } finally {
@@ -124,6 +131,22 @@ export default function POSPage() {
         }, repairSearch ? 300 : 0);
         return () => clearTimeout(timeout);
     }, [mode, repairSearch]);
+
+    // ─── Load pending web sales (with search) ───
+    useEffect(() => {
+        if (mode !== 'pending_sales') return;
+        const timeout = setTimeout(async () => {
+            try {
+                const params = { status: 'pending' };
+                if (pendingSearch.trim()) params.search = pendingSearch;
+                const data = await orderService.getAll(params);
+                setPendingSales(data.orders || []);
+            } catch (err) {
+                console.error(err);
+            }
+        }, pendingSearch ? 300 : 0);
+        return () => clearTimeout(timeout);
+    }, [mode, pendingSearch]);
 
     // ─── Filtered items ───
     const filteredProducts = products.filter(p => {
@@ -224,6 +247,63 @@ export default function POSPage() {
         });
     };
 
+    const loadPendingSaleToCart = async (sale) => {
+        try {
+            const saleDetail = await orderService.getById(sale.id);
+            clearCart();
+            setLoadedPendingSaleId(saleDetail.id);
+
+            if (saleDetail.customer_id) {
+                setSelectedCustomer({
+                    id: saleDetail.customer_id,
+                    first_name: saleDetail.customer_first_name,
+                    last_name: saleDetail.customer_last_name,
+                    phone: saleDetail.customer_phone,
+                    email: saleDetail.customer_email
+                });
+            }
+
+            const cartItems = saleDetail.items.map(item => {
+                const key = item.product_id ? `p-${item.product_id}` : `s-${item.service_id}`;
+                return {
+                    key,
+                    type: item.product_id ? 'product' : 'service',
+                    product_id: item.product_id,
+                    service_id: item.service_id,
+                    description: item.description,
+                    unit_price: parseFloat(item.unit_price) || 0,
+                    quantity: item.quantity,
+                    discount: parseFloat(item.discount) || 0,
+                    maxStock: 999
+                };
+            });
+            setCart(cartItems);
+            showToast(`Pedido ${saleDetail.order_number} cargado en el carrito`);
+        } catch (err) {
+            console.error(err);
+            showToast('Error al cargar el pedido', 'error');
+        }
+    };
+
+    const handleCancelPendingSale = async (sale) => {
+        if (!window.confirm(`¿Estás seguro de que deseas cancelar el pedido ${sale.order_number}?`)) {
+            return;
+        }
+        try {
+            await orderService.cancel(sale.id);
+            showToast(`Pedido ${sale.order_number} cancelado`, 'success');
+            if (loadedPendingSaleId === sale.id) {
+                clearCart();
+            }
+            // Refresh list
+            const data = await orderService.getAll({ status: 'pending' });
+            setPendingSales(data.orders || []);
+        } catch (err) {
+            console.error(err);
+            showToast('Error al cancelar el pedido', 'error');
+        }
+    };
+
     const updateQuantity = (key, delta) => {
         setCart(prev => prev.map(item => {
             if (item.key !== key) return item;
@@ -254,6 +334,7 @@ export default function POSPage() {
         setAmountReceived('');
         setSelectedCustomer(null);
         setLinkedRepair(null);
+        setLoadedPendingSaleId(null);
     };
 
     // ─── Calculations ───
@@ -318,6 +399,7 @@ export default function POSPage() {
             const saleData = {
                 customer_id: selectedCustomer?.id || null,
                 repair_id: linkedRepair?.id || null,
+                pending_sale_id: loadedPendingSaleId || null,
                 items: cart.map(item => ({
                     product_id: item.product_id,
                     service_id: item.service_id,
@@ -329,7 +411,7 @@ export default function POSPage() {
                 discount: parseFloat(discount) || 0,
                 payment_method: paymentMethod,
                 amount_received: paymentMethod === 'cash' ? parseFloat(amountReceived) : total,
-                notes: signatureData ? 'Cobrado en POS con firma de conformidad' : (linkedRepair ? 'Cobrado en POS sin firma de conformidad' : null)
+                notes: signatureData ? 'Cobrado en POS con firma de conformidad' : (linkedRepair ? 'Cobrado en POS sin firma de conformidad' : (loadedPendingSaleId ? 'Pedido web cobrado en sucursal' : null))
             };
 
             const result = await posService.createSale(saleData);
@@ -386,10 +468,19 @@ export default function POSPage() {
                                 placeholder={
                                     mode === 'products' ? 'Buscar producto, SKU o código...' :
                                     mode === 'services' ? 'Buscar servicio...' :
+                                    mode === 'pending_sales' ? 'Buscar pedido por folio o cliente...' :
                                     'Buscar ticket, cliente o modelo...'
                                 }
-                                value={mode === 'repairs' ? repairSearch : search}
-                                onChange={(e) => mode === 'repairs' ? setRepairSearch(e.target.value) : setSearch(e.target.value)}
+                                value={
+                                    mode === 'repairs' ? repairSearch :
+                                    mode === 'pending_sales' ? pendingSearch :
+                                    search
+                                }
+                                onChange={(e) => {
+                                    if (mode === 'repairs') setRepairSearch(e.target.value);
+                                    else if (mode === 'pending_sales') setPendingSearch(e.target.value);
+                                    else setSearch(e.target.value);
+                                }}
                                 id="pos-search"
                             />
                         </div>
@@ -413,6 +504,15 @@ export default function POSPage() {
                                 <ClipboardList size={14} /> Reparaciones
                                 {billableRepairs.length > 0 && (
                                     <span className="mode-badge">{billableRepairs.length}</span>
+                                )}
+                            </button>
+                            <button
+                                className={`${mode === 'pending_sales' ? 'active' : ''} ${pendingSales.length > 0 ? 'has-badge' : ''}`}
+                                onClick={() => { setMode('pending_sales'); setPendingSearch(''); }}
+                            >
+                                <ShoppingBag size={14} /> Pedidos Web
+                                {pendingSales.length > 0 && (
+                                    <span className="mode-badge">{pendingSales.length}</span>
                                 )}
                             </button>
                         </div>
@@ -492,6 +592,92 @@ export default function POSPage() {
                                 <Wrench size={40} className="empty-icon" />
                                 <h3>Sin servicios</h3>
                                 <p>Agrega servicios desde el catálogo</p>
+                            </div>
+                        )
+                    ) : mode === 'pending_sales' ? (
+                        /* ── Pending Web Sales Tab ── */
+                        pendingSales.length > 0 ? (
+                            pendingSales.map(sale => {
+                                const isLoaded = loadedPendingSaleId === sale.id;
+                                return (
+                                    <div
+                                        key={sale.id}
+                                        className={`pos-repair-card ${isLoaded ? 'in-cart' : ''}`}
+                                        onClick={() => !isLoaded && loadPendingSaleToCart(sale)}
+                                        style={{ borderColor: isLoaded ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.08)' }}
+                                    >
+                                        <div className="repair-card-header">
+                                            <span className="repair-card-ticket" style={{ color: 'var(--color-primary)' }}>
+                                                <ShoppingBag size={12} />
+                                                {sale.order_number}
+                                            </span>
+                                            <span className="status-badge-mini status-pending">
+                                                Pendiente
+                                            </span>
+                                        </div>
+                                        <span className="pos-product-name">
+                                            {sale.customer_first_name} {sale.customer_last_name}
+                                        </span>
+                                        <span className="pos-product-meta">
+                                            {sale.item_count} {sale.item_count === 1 ? 'artículo' : 'artículos'}
+                                        </span>
+                                        <span className="pos-product-meta" style={{ fontSize: '0.65rem' }}>
+                                            Nota: {sale.notes || 'Sin nota'}
+                                        </span>
+                                        <div className="repair-card-pricing" style={{ marginTop: 'var(--sp-2)' }}>
+                                            <div className="repair-price-row balance">
+                                                <span>Por pagar:</span>
+                                                <span style={{ color: 'var(--color-primary)', fontWeight: '800' }}>{formatCurrency(sale.total)}</span>
+                                            </div>
+                                        </div>
+                                        {/* Action buttons */}
+                                        <div className="pos-card-actions" style={{ marginTop: 'var(--sp-3)', display: 'flex', gap: '8px' }}>
+                                            <button
+                                                className="btn btn-outline btn-sm btn-danger-pos"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleCancelPendingSale(sale);
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '4px',
+                                                    fontSize: '0.75rem',
+                                                    padding: '6px 8px',
+                                                    borderColor: 'rgba(239, 68, 68, 0.3)',
+                                                    color: '#f87171',
+                                                    background: 'rgba(239, 68, 68, 0.05)',
+                                                    cursor: 'pointer',
+                                                    borderRadius: 'var(--radius-sm, 6px)',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                                                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
+                                                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                                                }}
+                                            >
+                                                <X size={12} /> Cancelar Pedido
+                                            </button>
+                                        </div>
+                                        {isLoaded && (
+                                            <span className="repair-in-cart-badge" style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}>
+                                                <CheckCircle2 size={12} /> Cargado
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                                <ShoppingBag size={40} className="empty-icon" />
+                                <h3>Sin pedidos web</h3>
+                                <p>Los pedidos creados por clientes aparecerán aquí</p>
                             </div>
                         )
                     ) : (
@@ -617,6 +803,21 @@ export default function POSPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Linked Pending Web Sale */}
+                {loadedPendingSaleId && (
+                    <div className="pos-repair-link" style={{ marginBottom: 'var(--sp-2)' }}>
+                        <div className="repair-link-badge" style={{ backgroundColor: 'rgba(230, 51, 88, 0.1)', color: 'var(--color-primary)', borderColor: 'rgba(230, 51, 88, 0.2)' }}>
+                            <ShoppingBag size={14} />
+                            <span>Pedido Web Cargado</span>
+                            <button className="btn btn-ghost btn-sm" onClick={() => {
+                                clearCart();
+                            }} style={{ marginLeft: 'auto', color: 'var(--color-primary)' }}>
+                                <X size={12} />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Linked Repair */}
                 {linkedRepair && (

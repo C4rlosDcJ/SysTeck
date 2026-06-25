@@ -33,6 +33,17 @@ export default function Navbar() {
         return <>{name.substring(0, mid)}<span className="text-primary">{name.substring(mid)}</span></>;
     };
 
+    const handleSectionClick = (e, targetId) => {
+        setMenuOpen(false);
+        if (location.pathname === '/') {
+            e.preventDefault();
+            const element = document.getElementById(targetId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    };
+
     return (
         <nav className="navbar">
             <div className="navbar-container">
@@ -66,33 +77,40 @@ export default function Navbar() {
                             Inicio
                         </Link>
                         <Link
+                            to="/tienda"
+                            className={`nav-link ${isActive('/tienda') ? 'active' : ''}`}
+                            onClick={() => setMenuOpen(false)}
+                        >
+                            Tienda
+                        </Link>
+                        <Link
                             to="/rastrear"
                             className={`nav-link ${isActive('/rastrear') ? 'active' : ''}`}
                             onClick={() => setMenuOpen(false)}
                         >
                             Rastrear
                         </Link>
-                        <a
-                            href="/#servicios"
+                        <Link
+                            to="/#servicios"
                             className="nav-link"
-                            onClick={() => setMenuOpen(false)}
+                            onClick={(e) => handleSectionClick(e, 'servicios')}
                         >
                             Servicios
-                        </a>
-                        <a
-                            href="/#proceso"
+                        </Link>
+                        <Link
+                            to="/#proceso"
                             className="nav-link"
-                            onClick={() => setMenuOpen(false)}
+                            onClick={(e) => handleSectionClick(e, 'proceso')}
                         >
                             Proceso
-                        </a>
-                        <a
-                            href="/#contacto"
+                        </Link>
+                        <Link
+                            to="/#contacto"
                             className="nav-link"
-                            onClick={() => setMenuOpen(false)}
+                            onClick={(e) => handleSectionClick(e, 'contacto')}
                         >
                             Contacto
-                        </a>
+                        </Link>
                     </div>
 
                     {/* Auth buttons */}
