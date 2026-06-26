@@ -8,6 +8,9 @@ require('dotenv').config();
 
 const app = express();
 
+// Confiar en el proxy (necesario en Render, Heroku, etc., para rate limiters)
+app.set('trust proxy', 1);
+
 // Helmet.js para cabeceras de seguridad HTTP
 app.use(helmet({
     crossOriginResourcePolicy: false, // Permitir cargar imágenes locales en frontend

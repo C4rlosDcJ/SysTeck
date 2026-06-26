@@ -3,7 +3,7 @@ const db = require('../config/database');
 // Helper para obtener la API key de la base de datos o variables de entorno
 async function getApiKey() {
     try {
-        const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_key = "gemini_api_key"');
+        const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_key = ?', ['gemini_api_key']);
         if (rows.length > 0 && rows[0].setting_value) {
             return rows[0].setting_value.trim();
         }
