@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { settingsService } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import { Save, RefreshCw, ShieldCheck, Building, Palette, Check, LayoutGrid, Upload, Trash2, Image, Wrench, Star } from 'lucide-react';
+import { Save, RefreshCw, ShieldCheck, Building, Palette, Check, LayoutGrid, Upload, Trash2, Image, Wrench, Star, Sparkles, Eye, EyeOff } from 'lucide-react';
 import './SettingsPage.css';
 
 const ACCENT_PALETTE = [
@@ -53,7 +53,8 @@ export default function SettingsPage() {
         contact_email: '',
         contact_phone: '',
         contact_address: '',
-        contact_schedule: ''
+        contact_schedule: '',
+        gemini_api_key: ''
     });
     
     const [loading, setLoading] = useState(true);
@@ -62,6 +63,7 @@ export default function SettingsPage() {
     // Formulario de nuevo servicio
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [newService, setNewService] = useState({ title: '', description: '', color: '#e63358', icon: 'smartphone' });
+    const [showApiKey, setShowApiKey] = useState(false);
 
     const handleLogoUpload = (e) => {
         const file = e.target.files[0];
@@ -438,6 +440,78 @@ export default function SettingsPage() {
                             </button>
                         </div>
                     </form>
+                </div>
+
+                {/* Integracion de Inteligencia Artificial */}
+                <div className="settings-card">
+                    <div className="settings-section">
+                        <h2><Sparkles size={20} className="text-primary" /> Inteligencia Artificial (Gemini)</h2>
+                        <p className="text-muted" style={{ fontSize: 'var(--font-sm)', marginBottom: 'var(--sp-4)' }}>
+                            Configura la API Key de Google Gemini para habilitar las funciones de IA del sistema: diagnóstico inteligente, chatbot de soporte y profesionalización de notas.
+                        </p>
+
+                        <div className="input-group">
+                            <label htmlFor="gemini_api_key">API Key de Google Gemini</label>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showApiKey ? 'text' : 'password'}
+                                    id="gemini_api_key"
+                                    name="gemini_api_key"
+                                    value={settings.gemini_api_key}
+                                    onChange={handleChange}
+                                    className="input"
+                                    placeholder="AIzaSy..."
+                                    style={{ paddingRight: '44px' }}
+                                    autoComplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowApiKey(!showApiKey)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '8px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--color-text-muted)',
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}
+                                    title={showApiKey ? 'Ocultar clave' : 'Mostrar clave'}
+                                >
+                                    {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                            <p className="settings-note">
+                                Obtén tu API Key en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>Google AI Studio</a>. Esta clave se almacena de forma segura en la base de datos del servidor.
+                            </p>
+                        </div>
+
+                        <div className="settings-actions" style={{ marginTop: 'var(--sp-4)' }}>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={saving}
+                                onClick={async () => {
+                                    try {
+                                        setSaving(true);
+                                        await settingsService.update({ gemini_api_key: settings.gemini_api_key });
+                                        alert('API Key de Gemini guardada correctamente.');
+                                    } catch (error) {
+                                        alert('Error al guardar la API Key: ' + error.message);
+                                    } finally {
+                                        setSaving(false);
+                                    }
+                                }}
+                            >
+                                {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                                {saving ? 'Guardando...' : 'Guardar API Key'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ═══ Administración de Especialidades y Servicios ═══ */}

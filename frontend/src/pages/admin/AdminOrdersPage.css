@@ -1,0 +1,372 @@
+/* =====================================================
+   AdminOrdersPage — Admin Orders Management styles
+   ===================================================== */
+
+.admin-orders {
+    padding: var(--sp-6);
+    max-width: 1400px;
+    margin: 0 auto;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-orders-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-6);
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+}
+
+.admin-orders-header h1 {
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
+    font-weight: 800;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+/* ── Stats Row ── */
+.orders-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-6);
+}
+
+.orders-stat-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-5);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+}
+
+.orders-stat-card .stat-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.orders-stat-card .stat-icon-wrap.pending {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.orders-stat-card .stat-icon-wrap.progress {
+    background: rgba(168, 85, 247, 0.12);
+    color: #7c3aed;
+}
+
+.orders-stat-card .stat-icon-wrap.ready {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+}
+
+.orders-stat-card .stat-icon-wrap.revenue {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+}
+
+.orders-stat-card .stat-info .stat-value {
+    font-size: var(--font-xl);
+    font-weight: 800;
+    color: var(--color-text);
+    display: block;
+}
+
+.orders-stat-card .stat-info .stat-label {
+    font-size: var(--font-xs);
+    color: var(--color-text-secondary);
+}
+
+/* ── Controls ── */
+.orders-controls {
+    display: flex;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-5);
+    flex-wrap: wrap;
+}
+
+.orders-controls .filter-select {
+    padding: 8px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.orders-controls .filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* ── Table ── */
+.orders-table-wrap {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.orders-table th {
+    text-align: left;
+    padding: var(--sp-4) var(--sp-5);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-hover);
+}
+
+.orders-table td {
+    padding: var(--sp-4) var(--sp-5);
+    font-size: var(--font-sm);
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+.orders-table tr:last-child td {
+    border-bottom: none;
+}
+
+.orders-table tr:hover td {
+    background: var(--color-bg-hover);
+}
+
+.order-customer-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.order-customer-cell .customer-name {
+    font-weight: 600;
+}
+
+.order-customer-cell .customer-contact {
+    font-size: var(--font-xs);
+    color: var(--color-text-secondary);
+}
+
+/* Status select in table */
+.status-select-wrap {
+    position: relative;
+}
+
+.status-select {
+    padding: 6px 12px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    cursor: pointer;
+    appearance: none;
+    padding-right: 28px;
+    min-width: 140px;
+}
+
+.status-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.order-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.order-actions button {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--font-xs);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.order-actions button:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* ── Detail Modal ── */
+.order-detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.order-detail-modal {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: var(--sp-8);
+    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.order-detail-modal h2 {
+    font-size: var(--font-xl);
+    font-weight: 800;
+    margin-bottom: var(--sp-5);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.detail-section {
+    margin-bottom: var(--sp-5);
+}
+
+.detail-section h4 {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--sp-2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-section .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-2);
+}
+
+.detail-section .detail-item {
+    font-size: var(--font-sm);
+}
+
+.detail-section .detail-item span {
+    color: var(--color-text-secondary);
+    display: block;
+    font-size: var(--font-xs);
+}
+
+.detail-section .detail-item strong {
+    color: var(--color-text);
+}
+
+.detail-items-list {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.detail-items-list th {
+    text-align: left;
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.detail-items-list td {
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--font-sm);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.detail-notes-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--font-sm);
+    resize: none;
+    font-family: inherit;
+    margin-bottom: var(--sp-4);
+}
+
+.detail-notes-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.detail-actions {
+    display: flex;
+    gap: var(--sp-3);
+    justify-content: flex-end;
+}
+
+/* ── Empty ── */
+.orders-empty-admin {
+    text-align: center;
+    padding: var(--sp-16);
+    color: var(--color-text-secondary);
+}
+
+.orders-empty-admin svg {
+    opacity: 0.3;
+    margin-bottom: var(--sp-4);
+}
+
+.orders-empty-admin h3 {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--sp-2);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .admin-orders {
+        padding: var(--sp-4);
+    }
+
+    .orders-table th:nth-child(4),
+    .orders-table td:nth-child(4) {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .orders-table th:nth-child(3),
+    .orders-table td:nth-child(3) {
+        display: none;
+    }
+}
