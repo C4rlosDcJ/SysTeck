@@ -108,6 +108,14 @@ async function dbInit() {
             await connection.query(`ALTER TABLE repairs ADD COLUMN review_text TEXT NULL`);
         }
 
+        // 8.5. Verificar y agregar columna payment_status a repairs si no existe
+        console.log(`[DB-INIT] Verificando columna "payment_status" en tabla "repairs"...`);
+        const [paymentStatusCol] = await connection.query(`SHOW COLUMNS FROM repairs LIKE 'payment_status'`);
+        if (paymentStatusCol.length === 0) {
+            await connection.query(`ALTER TABLE repairs ADD COLUMN payment_status ENUM('pending', 'partial', 'paid') DEFAULT 'pending' AFTER status`);
+            console.log(`[DB-INIT] Columna payment_status añadida a repairs.`);
+        }
+
         // 9. Modificar tipo de setting_value a LONGTEXT para soportar logos pesados en base64
         console.log(`[DB-INIT] Asegurando que la columna "setting_value" en tabla "settings" soporte datos largos (LONGTEXT)...`);
         await connection.query(`ALTER TABLE settings MODIFY COLUMN setting_value LONGTEXT`);

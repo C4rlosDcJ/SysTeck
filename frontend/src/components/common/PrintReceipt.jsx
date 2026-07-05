@@ -262,11 +262,13 @@ export default function PrintReceipt({ isOpen, onClose, data, type = 'repair', s
                                         <p><span>Cliente:</span> <span className="bold">{data.customer_first_name} {data.customer_last_name}</span></p>
                                     )}
                                     <p><span>Cajero:</span> <span className="bold">{data.cashier_first_name} {data.cashier_last_name}</span></p>
-                                    {data.repair_ticket && (
+                                    {data.repair_ticket ? (
                                         <>
                                             <p><span>Folio Reparación:</span> <span className="bold">{data.repair_ticket}</span></p>
                                             <p><span>Garantía Reparación:</span> <span className="bold">{data.repair_warranty_days || settings.default_warranty_days || 30} días</span></p>
                                         </>
+                                    ) : (
+                                        <p><span>Garantía Aplicable:</span> <span className="bold">{settings.default_warranty_days || 30} días</span></p>
                                     )}
                                 </div>
                             </div>
