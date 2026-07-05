@@ -2,15 +2,34 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from './constants';
 
-export const generateServiceTicket = (repair, settings = {}) => {
+export const generateServiceTicket = async (repair, settings = {}) => {
     // A4 Format: 210mm x 297mm
     const doc = new jsPDF();
+    
+    // Fetch QR code image and convert to Base64
+    let qrBase64 = null;
+    try {
+        const trackingCode = repair.ticket_number;
+        // Fix: Use ticketId to match TrackRepairPage URL search parameter
+        const trackingUrl = `${window.location.origin}/rastrear?ticketId=${encodeURIComponent(trackingCode)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(trackingUrl)}&margin=0`;
+        
+        const response = await fetch(qrUrl);
+        const blob = await response.blob();
+        qrBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.error('Error fetching QR code for PDF:', e);
+    }
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     
-    // Theme Colors (Modern Premium Slate & Blue Palette)
+    // Theme Colors (Modern Premium Slate & Red Accents matching SysTeck)
     const primaryColor = [30, 41, 59];   // Slate 800 (#1e293b)
-    const accentColor = [37, 99, 235];   // Blue 600 (#2563eb)
+    const accentColor = [230, 51, 88];   // SysTeck Crimson Red (#e63358)
     const darkColor = [15, 23, 42];      // Slate 900 (#0f172a)
     const mutedColor = [100, 116, 139];  // Slate 500 (#64748b)
     const lightBg = [248, 250, 252];     // Slate 50 (#f8fafc)
@@ -20,54 +39,53 @@ export const generateServiceTicket = (repair, settings = {}) => {
     const contactPhone = settings.contact_phone || '';
     const contactAddress = settings.business_address || '';
 
-    let currentY = 20;
+    let currentY = 16;
 
     // --- Elegant Header Banner ---
-    // Background accent strip at top
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.rect(0, 0, pageWidth, 12, 'F');
+    doc.rect(0, 0, pageWidth, 10, 'F');
 
     // Business details
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
+    doc.setFontSize(22);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(businessName.toUpperCase(), 15, currentY + 10);
+    doc.text(businessName.toUpperCase(), 15, currentY + 8);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
     
     let contactInfo = [];
     if (contactPhone) contactInfo.push(`Tel: ${contactPhone}`);
     if (contactEmail) contactInfo.push(contactEmail);
     if (contactAddress) contactInfo.push(contactAddress);
-    doc.text(contactInfo.join('  |  '), 15, currentY + 16);
+    doc.text(contactInfo.join('  |  '), 15, currentY + 13);
 
     // Ticket Number & Date (Top Right)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
     const ticketText = `ORDEN DE SERVICIO: #${repair.ticket_number}`;
     const ticketWidth = doc.getTextWidth(ticketText);
-    doc.text(ticketText, pageWidth - 15 - ticketWidth, currentY + 10);
+    doc.text(ticketText, pageWidth - 15 - ticketWidth, currentY + 8);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
-    const dateText = `Fecha Impresión: ${formatDate(new Date())}`;
+    const dateText = `Fecha: ${formatDate(new Date())}`;
     const dateWidth = doc.getTextWidth(dateText);
-    doc.text(dateText, pageWidth - 15 - dateWidth, currentY + 16);
+    doc.text(dateText, pageWidth - 15 - dateWidth, currentY + 13);
 
     // Separator line
-    currentY += 24;
+    currentY += 18;
     doc.setDrawColor(226, 232, 240); // Slate 200
     doc.setLineWidth(0.5);
     doc.line(15, currentY, pageWidth - 15, currentY);
-    currentY += 10;
+    currentY += 8;
 
-    // --- Side by Side Panels: Client & Device (Using autoTable for alignment) ---
+    // --- Client & Device details ---
     const clientDetails = [
-        ['Nombre:', `${repair.customer_first_name || repair.first_name || ''} ${repair.customer_last_name || repair.last_name || ''}`],
+        ['Nombre:', `${repair.customer_first_name || repair.first_name || 'Mostrador'} ${repair.customer_last_name || repair.last_name || ''}`.trim()],
         ['Teléfono:', repair.customer_phone || 'No registrado'],
         ['Email:', repair.customer_email || 'No registrado']
     ];
@@ -75,22 +93,22 @@ export const generateServiceTicket = (repair, settings = {}) => {
     const deviceDetails = [
         ['Equipo:', `${repair.brand_name || repair.brand_other || ''} ${repair.model || ''}`.trim()],
         ['Serie/IMEI:', repair.imei || repair.serial_number || 'N/A'],
-        ['Color/Capacidad:', `${repair.color || 'N/A'} • ${repair.storage_capacity ? repair.storage_capacity + 'GB' : 'N/A'}`],
+        ['Estético:', `${repair.physical_condition || 5}/5`],
         ['Contraseña:', repair.device_password || 'Ninguna']
     ];
 
     // Client Table
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text('INFORMACIÓN DEL CLIENTE', 15, currentY);
     
     autoTable(doc, {
-        startY: currentY + 3,
+        startY: currentY + 2,
         body: clientDetails,
         theme: 'plain',
-        styles: { fontSize: 8.5, cellPadding: 2, textColor: darkColor },
-        columnStyles: { 0: { fontStyle: 'bold', width: 25, textColor: mutedColor } },
+        styles: { fontSize: 8, cellPadding: 1.5, textColor: darkColor },
+        columnStyles: { 0: { fontStyle: 'bold', width: 20, textColor: mutedColor } },
         margin: { left: 15 },
         tableWidth: 85
     });
@@ -98,20 +116,20 @@ export const generateServiceTicket = (repair, settings = {}) => {
     // Device Table
     doc.text('DETALLES DEL EQUIPO', 110, currentY);
     autoTable(doc, {
-        startY: currentY + 3,
+        startY: currentY + 2,
         body: deviceDetails,
         theme: 'plain',
-        styles: { fontSize: 8.5, cellPadding: 2, textColor: darkColor },
-        columnStyles: { 0: { fontStyle: 'bold', width: 30, textColor: mutedColor } },
+        styles: { fontSize: 8, cellPadding: 1.5, textColor: darkColor },
+        columnStyles: { 0: { fontStyle: 'bold', width: 25, textColor: mutedColor } },
         margin: { left: 110 },
         tableWidth: 85
     });
 
-    currentY = Math.max(doc.lastAutoTable.finalY, currentY + 40) + 12;
+    currentY = Math.max(doc.lastAutoTable.finalY, currentY + 24) + 8;
 
     // --- Section: Recepción e Inspección ---
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text('RECEPCIÓN Y DIAGNÓSTICO', 15, currentY);
     
@@ -119,121 +137,128 @@ export const generateServiceTicket = (repair, settings = {}) => {
     let checklistStr = 'No realizado';
     if (checklist && Object.keys(checklist).length > 0) {
         checklistStr = Object.entries(checklist)
-            .map(([k, v]) => `${k.toUpperCase()}: ${v ? 'OK' : 'FALLA'}`)
-            .join('  |  ');
+            .map(([k, v]) => `${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: ${v ? '✓' : '✗'}`)
+            .join('   ');
     }
 
     const receptionDetails = [
         ['Servicio Solicitado:', repair.service_name || repair.service_requested || 'General'],
-        ['Problema Reportado:', repair.problem_description || 'N/A'],
-        ['Condición Física:', `${repair.physical_condition || 5}/5`],
+        ['Falla Reportada:', repair.problem_description || 'N/A'],
+        ['Garantía Pactada:', `${repair.warranty_days || settings.default_warranty_days || 30} días`],
         ['Daños Previos:', repair.existing_damage || 'Ninguno reportado'],
         ['Accesorios Recibidos:', repair.accessories_received || 'Ninguno'],
-        ['Checklist Funcional:', checklistStr]
+        ['Inspección Checklist:', checklistStr]
     ];
 
     autoTable(doc, {
-        startY: currentY + 3,
+        startY: currentY + 2,
         body: receptionDetails,
         theme: 'striped',
-        styles: { fontSize: 8.5, cellPadding: 3, textColor: darkColor },
+        styles: { fontSize: 8, cellPadding: 2, textColor: darkColor },
         headStyles: { fillColor: primaryColor },
-        columnStyles: { 0: { fontStyle: 'bold', width: 45, textColor: primaryColor } },
+        columnStyles: { 0: { fontStyle: 'bold', width: 40, textColor: primaryColor } },
         margin: { left: 15, right: 15 }
     });
 
-    currentY = doc.lastAutoTable.finalY + 12;
+    currentY = doc.lastAutoTable.finalY + 8;
 
     // --- Section: Presupuesto ---
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text('PRESUPUESTO ESTIMADO Y COSTOS', 15, currentY);
     
     const costs = [
-        ['Servicios / Mano de Obra', formatCurrency(repair.labor_cost)],
+        ['Mano de Obra / Servicios', formatCurrency(repair.labor_cost)],
         ['Refacciones y Partes', formatCurrency(repair.parts_cost)],
         ['Diagnóstico Técnico', formatCurrency(repair.diagnosis_cost)]
     ];
     if (repair.discount > 0) {
-        costs.push(['Descuento Especial', `-${formatCurrency(repair.discount)}`]);
+        costs.push(['Descuento Aplicado', `-${formatCurrency(repair.discount)}`]);
     }
 
     autoTable(doc, {
-        startY: currentY + 3,
+        startY: currentY + 2,
         body: costs,
         theme: 'plain',
-        styles: { fontSize: 8.5, cellPadding: 2.5, textColor: darkColor },
+        styles: { fontSize: 8, cellPadding: 2, textColor: darkColor },
         columnStyles: { 0: { width: 140 }, 1: { halign: 'right', fontStyle: 'bold', textColor: darkColor } },
         margin: { left: 15, right: 15 }
     });
 
     currentY = doc.lastAutoTable.finalY + 4;
 
-    // Elegant Totals Box
+    // Totals Box
     doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
     doc.setDrawColor(226, 232, 240);
-    doc.rect(115, currentY, pageWidth - 130, 26, 'FD');
+    doc.rect(115, currentY, pageWidth - 130, 22, 'FD');
     
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
     doc.setFont('helvetica', 'normal');
-    doc.text('Total Estimado:', 120, currentY + 6);
-    doc.text(formatCurrency(repair.total_cost), pageWidth - 20, currentY + 6, { align: 'right' });
+    doc.text('Total Estimado:', 120, currentY + 5);
+    doc.text(formatCurrency(repair.total_cost), pageWidth - 20, currentY + 5, { align: 'right' });
     
-    doc.text('Anticipo Recibido:', 120, currentY + 12);
-    doc.text(formatCurrency(repair.advance_payment), pageWidth - 20, currentY + 12, { align: 'right' });
+    doc.text('Anticipo Recibido:', 120, currentY + 10);
+    doc.text(formatCurrency(repair.advance_payment), pageWidth - 20, currentY + 10, { align: 'right' });
     
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.text('Monto Restante:', 120, currentY + 20);
-    doc.text(formatCurrency(repair.total_cost - repair.advance_payment), pageWidth - 20, currentY + 20, { align: 'right' });
+    doc.text('Resta por Liquidar:', 120, currentY + 17);
+    doc.text(formatCurrency(repair.total_cost - repair.advance_payment), pageWidth - 20, currentY + 17, { align: 'right' });
 
-    currentY += 42;
-
-    // --- Signatures ---
-    if (currentY > pageHeight - 65) {
-        doc.addPage();
-        currentY = 20;
-    }
-
+    // --- Signatures & QR (Fixed at the bottom to ensure 1-page fit) ---
+    const bottomY = pageHeight - 54;
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
 
-    const leftX = 30;
-    const rightX = pageWidth - 90;
+    const leftX = 25;
+    const rightX = pageWidth - 85;
 
-    // Client Signature (renders approval or delivery signature if available)
+    // Client Signature
     const activeSignature = repair.signature_delivery || repair.signature_approval;
     if (activeSignature) {
         try {
-            doc.addImage(activeSignature, 'PNG', leftX + 5, currentY - 5, 50, 20);
+            doc.addImage(activeSignature, 'PNG', leftX + 5, bottomY - 14, 50, 16);
         } catch (e) {
             console.error('Error rendering signature in PDF:', e);
         }
     }
     
-    doc.setDrawColor(203, 213, 225); // Slate 300
+    doc.setDrawColor(203, 213, 225);
     doc.setLineWidth(0.5);
-    doc.line(leftX, currentY + 18, leftX + 60, currentY + 18);
+    doc.line(leftX, bottomY + 5, leftX + 60, bottomY + 5);
     doc.setFont('helvetica', 'bold');
-    doc.text('Firma de Conformidad Cliente', leftX + 30, currentY + 23, { align: 'center' });
+    doc.text('Firma de Conformidad Cliente', leftX + 30, bottomY + 10, { align: 'center' });
 
-    // Tech Signature / Stamp Place
-    doc.line(rightX, currentY + 18, rightX + 60, currentY + 18);
-    doc.text('Sello / Firma de Recepción', rightX + 30, currentY + 23, { align: 'center' });
+    // Center QR Code
+    if (qrBase64) {
+        try {
+            doc.addImage(qrBase64, 'PNG', pageWidth / 2 - 11, bottomY - 12, 22, 22);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+            doc.text('Escanea para seguimiento', pageWidth / 2, bottomY + 13, { align: 'center' });
+        } catch (e) {
+            console.error('Error rendering QR code in PDF:', e);
+        }
+    }
 
-    // --- Legal Footer ---
+    // Tech Receiver
+    doc.line(rightX, bottomY + 5, rightX + 60, bottomY + 5);
+    doc.text('Sello / Firma Receptor', rightX + 30, bottomY + 10, { align: 'center' });
+
+    // --- Legal Footer (Fixed at the very bottom) ---
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
+    doc.setFontSize(6);
     doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
     
     const terms1 = `TÉRMINOS Y CONDICIONES: El cliente acepta que el equipo se recibe para revisión y diagnóstico. ${businessName} no se hace responsable por pérdida de datos no respaldados previamente, ni por tarjetas SIM, memorias o accesorios no declarados.`;
-    const terms2 = `La garantía es válida por ${repair.warranty_days || 30} días sobre mano de obra y refacciones sustituidas. Equipos no reclamados después de 30 días generarán costos de almacenaje. A los 60 días sin reclamo, se considerarán legalmente abandonados.`;
+    const terms2 = `La garantía es válida por ${repair.warranty_days || settings.default_warranty_days || 30} días sobre mano de obra y refacciones sustituidas. Equipos no reclamados después de 30 días generarán costos de almacenaje. A los 60 días sin reclamo, se considerarán abandonados.`;
     
-    doc.text(doc.splitTextToSize(terms1, pageWidth - 30), 15, pageHeight - 18);
-    doc.text(doc.splitTextToSize(terms2, pageWidth - 30), 15, pageHeight - 11);
+    doc.text(doc.splitTextToSize(terms1, pageWidth - 30), 15, pageHeight - 14);
+    doc.text(doc.splitTextToSize(terms2, pageWidth - 30), 15, pageHeight - 8);
 
     doc.save(`Ticket_Orden_${repair.ticket_number}.pdf`);
 };

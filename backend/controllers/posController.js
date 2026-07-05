@@ -39,6 +39,91 @@ exports.createSale = async (req, res) => {
             ? Math.max(0, (parseFloat(amount_received) || 0) - total)
             : 0;
 
+        let activeRepairId = repair_id || null;
+        let generatedRepairTicket = null;
+
+        if (!activeRepairId) {
+            // Buscar si hay algún ítem de tipo servicio del catálogo
+            const serviceItem = items.find(item => item.service_id);
+            if (serviceItem) {
+                // Obtener detalles de device_type y nombre del servicio
+                const [serviceDetails] = await connection.query(
+                    'SELECT device_type_id, name FROM services_catalog WHERE id = ?',
+                    [serviceItem.service_id]
+                );
+
+                let deviceTypeId = null;
+                let serviceName = serviceItem.description;
+
+                if (serviceDetails.length > 0) {
+                    deviceTypeId = serviceDetails[0].device_type_id;
+                    if (!serviceName) {
+                        serviceName = serviceDetails[0].name;
+                    }
+                }
+
+                if (!deviceTypeId) {
+                    const [dtRows] = await connection.query('SELECT id FROM device_types WHERE name = "Otro" LIMIT 1');
+                    deviceTypeId = dtRows.length > 0 ? dtRows[0].id : 7;
+                }
+
+                // Obtener cliente final válido para el campo customer_id NOT NULL
+                let finalCustomerId = customer_id;
+                if (!finalCustomerId) {
+                    const [custRows] = await connection.query('SELECT id FROM users WHERE role = "client" ORDER BY id ASC LIMIT 1');
+                    finalCustomerId = custRows.length > 0 ? custRows[0].id : 1;
+                }
+
+                // Obtener días de garantía por defecto
+                const [settings] = await connection.query('SELECT setting_value FROM settings WHERE setting_key = "default_warranty_days"');
+                const warrantyDays = settings.length > 0 ? parseInt(settings[0].setting_value) : 30;
+
+                // Generar número de ticket de reparación
+                const date = new Date();
+                const year = date.getFullYear().toString().slice(-2);
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                generatedRepairTicket = `REP-${year}${month}${day}-${random}`;
+
+                const itemPrice = serviceItem.unit_price * serviceItem.quantity - (serviceItem.discount || 0);
+
+                // Insertar registro de reparación del servicio
+                const [repairResult] = await connection.query(`
+                    INSERT INTO repairs (
+                        ticket_number, customer_id, device_type_id, model,
+                        problem_description, service_requested, service_id,
+                        status, payment_status, total_cost, advance_payment,
+                        warranty_days, warranty_expires, created_at, started_at, completed_at, delivered_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'delivered', 'paid', ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), NOW(), NOW(), NOW(), NOW())
+                `, [
+                    generatedRepairTicket,
+                    finalCustomerId,
+                    deviceTypeId,
+                    'Servicio en POS',
+                    'Servicio contratado y cobrado directamente en Punto de Venta',
+                    serviceName,
+                    serviceItem.service_id,
+                    itemPrice,
+                    itemPrice,
+                    warrantyDays,
+                    warrantyDays
+                ]);
+
+                activeRepairId = repairResult.insertId;
+
+                // Insertar historial de estados
+                await connection.query(
+                    'INSERT INTO repair_status_history (repair_id, status, notes, changed_by) VALUES (?, "received", "Servicio contratado en POS", ?)',
+                    [activeRepairId, req.user.id]
+                );
+                await connection.query(
+                    'INSERT INTO repair_status_history (repair_id, status, notes, changed_by) VALUES (?, "delivered", "Servicio entregado y pagado en POS", ?)',
+                    [activeRepairId, req.user.id]
+                );
+            }
+        }
+
         let saleId = pending_sale_id;
         let saleNumber;
 
@@ -58,7 +143,7 @@ exports.createSale = async (req, res) => {
                 `UPDATE sales SET customer_id = ?, repair_id = ?, cashier_id = ?, subtotal = ?, discount = ?, total = ?,
                  payment_method = ?, amount_received = ?, change_amount = ?, status = 'completed', notes = ?
                  WHERE id = ?`,
-                [customer_id || null, repair_id || null, req.user.id,
+                [customer_id || null, activeRepairId, req.user.id,
                  subtotal, discount || 0, total, payment_method || 'cash',
                  amount_received || total, changeAmount, notes || null, pending_sale_id]
             );
@@ -70,7 +155,7 @@ exports.createSale = async (req, res) => {
                 `INSERT INTO sales (sale_number, customer_id, repair_id, cashier_id, subtotal, discount, total,
                  payment_method, amount_received, change_amount, notes, status)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')`,
-                [saleNumber, customer_id || null, repair_id || null, req.user.id,
+                [saleNumber, customer_id || null, activeRepairId, req.user.id,
                  subtotal, discount || 0, total, payment_method || 'cash',
                  amount_received || total, changeAmount, notes || null]
             );
@@ -105,10 +190,10 @@ exports.createSale = async (req, res) => {
         }
 
         // Si la venta está vinculada a una reparación, actualizar estado de pago
-        if (repair_id) {
+        if (activeRepairId && repair_id) {
             const [repair] = await connection.query(
                 'SELECT total_cost, advance_payment FROM repairs WHERE id = ?',
-                [repair_id]
+                [activeRepairId]
             );
 
             if (repair.length > 0) {
@@ -123,7 +208,7 @@ exports.createSale = async (req, res) => {
 
                 await connection.query(
                     'UPDATE repairs SET payment_status = ?, advance_payment = ? WHERE id = ?',
-                    [paymentStatus, totalPaid, repair_id]
+                    [paymentStatus, totalPaid, activeRepairId]
                 );
             }
         }
@@ -136,7 +221,9 @@ exports.createSale = async (req, res) => {
                 id: saleId,
                 sale_number: saleNumber,
                 total,
-                change_amount: changeAmount
+                change_amount: changeAmount,
+                repair_id: activeRepairId,
+                repair_ticket: generatedRepairTicket
             }
         });
     } catch (error) {
@@ -222,7 +309,9 @@ exports.getSaleById = async (req, res) => {
                 u.first_name as customer_first_name, u.last_name as customer_last_name,
                 u.phone as customer_phone, u.email as customer_email,
                 c.first_name as cashier_first_name, c.last_name as cashier_last_name,
-                r.ticket_number as repair_ticket
+                r.ticket_number as repair_ticket,
+                r.warranty_days as repair_warranty_days,
+                r.warranty_expires as repair_warranty_expires
             FROM sales s
             LEFT JOIN users u ON s.customer_id = u.id
             LEFT JOIN users c ON s.cashier_id = c.id

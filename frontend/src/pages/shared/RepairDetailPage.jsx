@@ -182,8 +182,8 @@ export default function RepairDetailPage() {
         finally { setUpdatingStatus(false); }
     };
 
-    const handlePrintTicket = () => {
-        try { generateServiceTicket(repair, settings); } 
+    const handlePrintTicket = async () => {
+        try { await generateServiceTicket(repair, settings); } 
         catch (error) { alert('No se pudo generar el ticket. Por favor intenta de nuevo.'); }
     };
 

@@ -1,35 +1,181 @@
 const db = require('../config/database');
 
-// Rastrear reparación por número de ticket (público, sin auth)
+// Rastrear reparación o venta/compra por número de ticket (público, sin auth)
 exports.trackRepair = async (req, res) => {
     try {
-        const { ticket } = req.params;
+        const ticketCode = req.params.ticket.trim().toUpperCase();
 
-        if (!ticket || ticket.length < 5) {
+        if (!ticketCode || ticketCode.length < 5) {
             return res.status(400).json({ message: 'Número de ticket inválido.' });
         }
 
+        // Si empieza con VTA-, buscamos en la tabla de ventas
+        if (ticketCode.startsWith('VTA-')) {
+            const [sales] = await db.query(`
+                SELECT 
+                    s.id,
+                    s.sale_number,
+                    s.subtotal,
+                    s.discount,
+                    s.tax,
+                    s.total,
+                    s.payment_method,
+                    s.amount_received,
+                    s.change_amount,
+                    s.status,
+                    s.notes,
+                    s.created_at,
+                    u.first_name as customer_first_name,
+                    u.last_name as customer_last_name,
+                    u.phone as customer_phone,
+                    u.email as customer_email,
+                    c.first_name as cashier_first_name,
+                    c.last_name as cashier_last_name,
+                    r.ticket_number as repair_ticket,
+                    r.warranty_days as repair_warranty_days,
+                    r.warranty_expires as repair_warranty_expires,
+                    s.repair_id
+                FROM sales s
+                LEFT JOIN users u ON s.customer_id = u.id
+                LEFT JOIN users c ON s.cashier_id = c.id
+                LEFT JOIN repairs r ON s.repair_id = r.id
+                WHERE s.sale_number = ?
+            `, [ticketCode]);
+
+            if (sales.length === 0) {
+                return res.status(404).json({ message: 'No se encontró ningún pedido o venta con ese número.' });
+            }
+
+            const sale = sales[0];
+
+            // Obtener ítems de la venta
+            const [items] = await db.query(`
+                SELECT 
+                    si.id,
+                    si.description,
+                    si.quantity,
+                    si.unit_price,
+                    si.discount,
+                    si.total,
+                    p.name as product_name,
+                    p.sku,
+                    sc.name as service_name
+                FROM sale_items si
+                LEFT JOIN products p ON si.product_id = p.id
+                LEFT JOIN services_catalog sc ON si.service_id = sc.id
+                WHERE si.sale_id = ?
+            `, [sale.id]);
+
+            // Si tiene reparación asociada, traemos los datos completos
+            let repairData = null;
+            if (sale.repair_id) {
+                const [repairs] = await db.query(`
+                    SELECT 
+                        r.id,
+                        r.ticket_number,
+                        r.model,
+                        r.status,
+                        r.payment_status,
+                        r.priority,
+                        r.estimated_delivery,
+                        r.warranty_days,
+                        r.warranty_expires,
+                        r.physical_condition,
+                        r.existing_damage,
+                        r.function_checklist,
+                        r.problem_description,
+                        r.service_requested,
+                        r.technical_observations,
+                        r.diagnosis_cost,
+                        r.labor_cost,
+                        r.parts_cost,
+                        r.discount,
+                        r.total_cost,
+                        r.advance_payment,
+                        r.created_at,
+                        r.started_at,
+                        r.completed_at,
+                        r.delivered_at,
+                        dt.name as device_type_name,
+                        b.name as brand_name,
+                        r.brand_other
+                    FROM repairs r
+                    LEFT JOIN device_types dt ON r.device_type_id = dt.id
+                    LEFT JOIN brands b ON r.brand_id = b.id
+                    WHERE r.id = ?
+                `, [sale.repair_id]);
+
+                if (repairs.length > 0) {
+                    repairData = repairs[0];
+                    // Historial de estados
+                    const [history] = await db.query(`
+                        SELECT status, notes, created_at
+                        FROM repair_status_history
+                        WHERE repair_id = ?
+                        ORDER BY created_at ASC
+                    `, [sale.repair_id]);
+                    // Notas públicas
+                    const [notes] = await db.query(`
+                        SELECT rn.note, rn.created_at, u.first_name
+                        FROM repair_notes rn
+                        LEFT JOIN users u ON rn.user_id = u.id
+                        WHERE rn.repair_id = ? AND rn.is_internal = FALSE
+                        ORDER BY rn.created_at DESC
+                    `, [sale.repair_id]);
+
+                    repairData.history = history;
+                    repairData.notes = notes;
+                }
+            }
+
+            return res.json({
+                is_sale: true,
+                is_repair: !!repairData,
+                repair: repairData,
+                ...sale,
+                items
+            });
+        }
+
+        // De lo contrario, buscamos en la tabla de reparaciones
         const [repairs] = await db.query(`
             SELECT 
+                r.id,
                 r.ticket_number,
                 r.model,
                 r.status,
+                r.payment_status,
                 r.priority,
                 r.estimated_delivery,
                 r.warranty_days,
                 r.warranty_expires,
+                r.physical_condition,
+                r.existing_damage,
+                r.function_checklist,
+                r.problem_description,
+                r.service_requested,
+                r.technical_observations,
+                r.diagnosis_cost,
+                r.labor_cost,
+                r.parts_cost,
+                r.discount,
+                r.total_cost,
+                r.advance_payment,
                 r.created_at,
                 r.started_at,
                 r.completed_at,
                 r.delivered_at,
                 dt.name as device_type_name,
                 b.name as brand_name,
-                r.brand_other
+                r.brand_other,
+                u.first_name as customer_first_name,
+                u.last_name as customer_last_name
             FROM repairs r
             LEFT JOIN device_types dt ON r.device_type_id = dt.id
             LEFT JOIN brands b ON r.brand_id = b.id
+            LEFT JOIN users u ON r.customer_id = u.id
             WHERE r.ticket_number = ?
-        `, [ticket.trim().toUpperCase()]);
+        `, [ticketCode]);
 
         if (repairs.length === 0) {
             return res.status(404).json({ message: 'No se encontró ninguna reparación con ese número de ticket.' });
@@ -41,11 +187,12 @@ exports.trackRepair = async (req, res) => {
         const [history] = await db.query(`
             SELECT 
                 rsh.status,
+                rsh.notes,
                 rsh.created_at
             FROM repair_status_history rsh
-            WHERE rsh.repair_id = (SELECT id FROM repairs WHERE ticket_number = ?)
+            WHERE rsh.repair_id = ?
             ORDER BY rsh.created_at ASC
-        `, [ticket.trim().toUpperCase()]);
+        `, [repair.id]);
 
         // Obtener notas públicas (no internas)
         const [notes] = await db.query(`
@@ -55,21 +202,24 @@ exports.trackRepair = async (req, res) => {
                 u.first_name
             FROM repair_notes rn
             LEFT JOIN users u ON rn.user_id = u.id
-            WHERE rn.repair_id = (SELECT id FROM repairs WHERE ticket_number = ?)
+            WHERE rn.repair_id = ?
             AND rn.is_internal = FALSE
             ORDER BY rn.created_at DESC
-        `, [ticket.trim().toUpperCase()]);
+        `, [repair.id]);
 
         res.json({
+            is_sale: false,
+            is_repair: true,
             ...repair,
             history,
             notes
         });
     } catch (error) {
-        console.error('[PUBLIC] Error al rastrear reparación:', error);
-        res.status(500).json({ message: 'Error al buscar la reparación.' });
+        console.error('[PUBLIC] Error al rastrear:', error);
+        res.status(500).json({ message: 'Error al realizar el rastreo.' });
     }
 };
+
 
 // Obtener configuración de tema (público, sin auth)
 exports.getTheme = async (req, res) => {

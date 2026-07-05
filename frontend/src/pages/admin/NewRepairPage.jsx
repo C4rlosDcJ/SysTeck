@@ -231,7 +231,7 @@ export default function NewRepairPage() {
                     const { generateServiceTicket } = await import('../../utils/pdfGenerator');
                     // We need to fetch the full updated repair with joins (customer name, etc) for the ticket
                     const fullRepair = await repairService.getById(newRepairId);
-                    generateServiceTicket(fullRepair, settings);
+                    await generateServiceTicket(fullRepair, settings);
                 } catch (printError) {
                     console.error('Error printing ticket:', printError);
                     alert('Ocurrió un error al intentar generar el recibo PDF.');
