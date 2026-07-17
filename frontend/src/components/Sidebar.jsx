@@ -157,7 +157,7 @@ export default function Sidebar({ isOpen, toggleMenu }) {
                         </button>
                     </div>
                     <div className="user-info">
-                        <div className="user-avatar">
+                        <div className="sidebar-user-avatar">
                             {user?.first_name?.charAt(0).toUpperCase()}
                         </div>
                         <div className="user-details">

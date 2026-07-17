@@ -115,3 +115,12 @@
 @media (max-width: 768px) {
     .settings-container { padding: var(--sp-4); }
 }
+
+.service-delete-btn {
+    color: var(--color-text-muted) !important;
+    transition: color var(--transition-fast);
+}
+
+.service-delete-btn:hover {
+    color: var(--color-error) !important;
+}

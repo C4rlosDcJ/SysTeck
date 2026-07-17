@@ -29,7 +29,7 @@ export const generateServiceTicket = async (repair, settings = {}) => {
     
     // Theme Colors (Modern Premium Slate & Red Accents matching SysTeck)
     const primaryColor = [30, 41, 59];   // Slate 800 (#1e293b)
-    const accentColor = [230, 51, 88];   // SysTeck Crimson Red (#e63358)
+    const accentColor = [79, 70, 229];    // Índigo Imperial (#4f46e5)
     const darkColor = [15, 23, 42];      // Slate 900 (#0f172a)
     const mutedColor = [100, 116, 139];  // Slate 500 (#64748b)
     const lightBg = [248, 250, 252];     // Slate 50 (#f8fafc)

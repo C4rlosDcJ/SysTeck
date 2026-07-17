@@ -477,24 +477,12 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                                                         </div>
                                                     )}
                                                     <div className="catalog-card-header">
-                                                        <div
-                                                            className="catalog-card-icon"
-                                                            style={{
-                                                                background: `${product.category_color || 'var(--color-primary)'}1a`,
-                                                                color: product.category_color || 'var(--color-primary)'
-                                                            }}
-                                                        >
+                                                        <div className="catalog-card-icon">
                                                             <Package size={22} />
                                                         </div>
                                                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                             {product.category_name && (
-                                                                <span
-                                                                    className="catalog-card-badge badge-category"
-                                                                    style={{
-                                                                        '--badge-bg': `${product.category_color}1a`,
-                                                                        '--badge-color': product.category_color
-                                                                    }}
-                                                                >
+                                                                <span className="catalog-card-badge badge-category">
                                                                     {product.category_name}
                                                                 </span>
                                                             )}
@@ -611,24 +599,12 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                                                     </div>
                                                 )}
                                                 <div className="catalog-card-header">
-                                                    <div
-                                                        className="catalog-card-icon"
-                                                        style={{
-                                                            background: `${product.category_color || 'var(--color-primary)'}1a`,
-                                                            color: product.category_color || 'var(--color-primary)'
-                                                        }}
-                                                    >
+                                                    <div className="catalog-card-icon">
                                                         <Package size={22} />
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                         {product.category_name && (
-                                                            <span
-                                                                className="catalog-card-badge badge-category"
-                                                                style={{
-                                                                    '--badge-bg': `${product.category_color}1a`,
-                                                                    '--badge-color': product.category_color
-                                                                }}
-                                                            >
+                                                            <span className="catalog-card-badge badge-category">
                                                                 {product.category_name}
                                                             </span>
                                                         )}

@@ -22,33 +22,14 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    background: radial-gradient(circle at 10% 20%, rgba(var(--color-primary-rgb), 0.15) 0%, transparent 60%),
-                radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 60%),
-                #111111;
+    background: var(--color-bg);
     border-right: 1px solid var(--color-border);
     overflow: hidden;
 }
 
 /* Ambient glow orb */
 .auth-visual-ambient {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    height: 400px;
-    background: var(--color-primary);
-    filter: blur(120px);
-    opacity: 0.12;
-    pointer-events: none;
-    border-radius: 50%;
-    z-index: 1;
-    animation: pulseBlob 8s ease-in-out infinite alternate;
-}
-
-@keyframes pulseBlob {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.08; }
-    100% { transform: translate(-40%, -45%) scale(1.2); opacity: 0.15; }
+    display: none;
 }
 
 .auth-visual-content {
@@ -83,9 +64,11 @@
 }
 
 .logo-text {
-    font-size: var(--font-lg);
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-family: var(--font-mono);
+    font-size: var(--font-md);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--color-text);
 }
 
@@ -94,15 +77,15 @@
 }
 
 .auth-visual-content h1 {
-    font-size: 3.25rem;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.04em;
+    font-family: var(--font-mono);
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     margin-bottom: var(--sp-5);
-    background: linear-gradient(135deg, #ffffff 0%, #a5a5a5 100%) !important;
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
 }
 
 .auth-visual-content p {
@@ -127,21 +110,17 @@
 .feature-icon-wrapper {
     width: 44px;
     height: 44px;
-    border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-primary);
-    transition: all 0.2s ease;
+    color: var(--color-text-secondary);
 }
 
 .feature:hover .feature-icon-wrapper {
-    transform: scale(1.05) translateY(-2px);
-    background: rgba(var(--color-primary-rgb), 0.1);
-    border-color: rgba(var(--color-primary-rgb), 0.25);
-    box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.15);
+    border-color: var(--color-border-strong);
 }
 
 .feature span {

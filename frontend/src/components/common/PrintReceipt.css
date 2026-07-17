@@ -144,7 +144,7 @@
 }
 
 .priority-badge {
-    background: #e63358 !important; /* Accented for high visibility on screen */
+    background: #000000 !important; /* Accented for high visibility on screen */
     color: #ffffff !important;
 }
 

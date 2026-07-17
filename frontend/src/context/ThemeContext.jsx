@@ -7,12 +7,12 @@ const ThemeContext = createContext();
 export const useTheme = () => useContext(ThemeContext);
 
 const DEFAULT_SERVICES = [
-  { title: 'Celulares', description: 'Pantallas, baterías, puertos de carga, cámaras y más', color: '#e63358', icon: 'smartphone' },
-  { title: 'Laptops', description: 'Pantallas, teclados, discos duros, memorias y más', color: '#3b82f6', icon: 'laptop' },
-  { title: 'Computadoras', description: 'Mantenimiento, upgrades, formateo y reparaciones', color: '#22c55e', icon: 'monitor' },
-  { title: 'Consolas', description: 'PlayStation, Xbox, Nintendo Switch y más', color: '#a855f7', icon: 'gamepad' },
-  { title: 'Smartwatches', description: 'Baterías, pantallas y reparaciones generales', color: '#f59e0b', icon: 'watch' },
-  { title: 'Tablets', description: 'iPad, Samsung Tab, pantallas y baterías', color: '#06b6d4', icon: 'tablet' }
+  { title: 'Celulares', description: 'Pantallas, baterías, puertos de carga, cámaras y más', color: '#4f46e5', icon: 'smartphone' },
+  { title: 'Laptops', description: 'Pantallas, teclados, discos duros, memorias y más', color: '#4f46e5', icon: 'laptop' },
+  { title: 'Computadoras', description: 'Mantenimiento, upgrades, formateo y reparaciones', color: '#4f46e5', icon: 'monitor' },
+  { title: 'Consolas', description: 'PlayStation, Xbox, Nintendo Switch y más', color: '#4f46e5', icon: 'gamepad' },
+  { title: 'Smartwatches', description: 'Baterías, pantallas y reparaciones generales', color: '#4f46e5', icon: 'watch' },
+  { title: 'Tablets', description: 'iPad, Samsung Tab, pantallas y baterías', color: '#4f46e5', icon: 'tablet' }
 ];
 
 const DEFAULT_TESTIMONIALS = [
@@ -41,22 +41,23 @@ const darkenHex = (hex, amount = 40) => {
   const b = clamp(rgb.b - amount).toString(16).padStart(2, '0');
   return `#${r}${g}${b}`;
 };
-
 // Apply accent color to CSS custom properties on :root
 const applyAccentToDOM = (color) => {
   const root = document.documentElement;
-  root.style.setProperty('--color-primary', color);
+  root.style.setProperty('--color-accent', color);
 
   const rgb = hexToRgb(color);
   if (rgb) {
-    root.style.setProperty('--color-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    root.style.setProperty('--color-accent-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    // YIQ contrast formula
+    const yiq = ((rgb.r * 299) + (rgb.g * 587) + (rgb.b * 114)) / 1000;
+    const contrast = (yiq >= 128) ? '#09090b' : '#ffffff';
+    root.style.setProperty('--color-accent-contrast', contrast);
   }
 
-  root.style.setProperty('--color-primary-dark', darkenHex(color, 40));
-  root.style.setProperty('--color-primary-muted', `${color}1e`);
-};
-
-// Apply border radius to CSS custom properties on :root
+  root.style.setProperty('--color-accent-dark', darkenHex(color, 40));
+  root.style.setProperty('--color-accent-muted', `${color}1e`);
+};// Apply border radius to CSS custom properties on :root
 const applyRadiusToDOM = (radius) => {
   const root = document.documentElement;
   root.style.setProperty('--radius-lg', radius);
@@ -74,7 +75,10 @@ export const ThemeProvider = ({ children }) => {
   });
 
   // ── Visual customization (defaults, overridden by API) ────
-  const [accentColor, setAccentColor] = useState(() => localStorage.getItem('accentColor') || '#e63358');
+  const [accentColor, setAccentColor] = useState(() => {
+    const saved = localStorage.getItem('accentColor');
+    return (saved === '#e63358' || !saved) ? '#4f46e5' : saved;
+  });
   const [borderRadius, setBorderRadius] = useState(() => localStorage.getItem('borderRadius') || '12px');
   const [businessName, setBusinessName] = useState(() => localStorage.getItem('businessName') || 'Sys-Teck');
   const [businessLogo, setBusinessLogo] = useState(() => localStorage.getItem('businessLogo') || '');
@@ -93,6 +97,7 @@ export const ThemeProvider = ({ children }) => {
   const [contactSchedule, setContactSchedule] = useState(() => localStorage.getItem('contactSchedule') || 'Lun - Sáb: 9AM - 7PM');
   const [contactEmail, setContactEmail] = useState(() => localStorage.getItem('contactEmail') || 'info@systeck.com');
   const [contactPhone, setContactPhone] = useState(() => localStorage.getItem('contactPhone') || '(123) 456-7890');
+  const [defaultWarrantyDays, setDefaultWarrantyDays] = useState(() => localStorage.getItem('defaultWarrantyDays') || '30');
   const [landingServices, setLandingServices] = useState(() => {
     try {
       const saved = localStorage.getItem('landingServices');
@@ -122,8 +127,9 @@ export const ThemeProvider = ({ children }) => {
         const data = await publicService.getTheme();
         if (data) {
           if (data.accent_color) {
-            setAccentColor(data.accent_color);
-            localStorage.setItem('accentColor', data.accent_color);
+            const mappedColor = data.accent_color === '#e63358' ? '#4f46e5' : data.accent_color;
+            setAccentColor(mappedColor);
+            localStorage.setItem('accentColor', mappedColor);
           }
           if (data.border_radius) {
             setBorderRadius(data.border_radius);
@@ -192,6 +198,10 @@ export const ThemeProvider = ({ children }) => {
           if (data.contact_phone !== undefined) {
             setContactPhone(data.contact_phone);
             localStorage.setItem('contactPhone', data.contact_phone);
+          }
+          if (data.default_warranty_days !== undefined) {
+            setDefaultWarrantyDays(data.default_warranty_days);
+            localStorage.setItem('defaultWarrantyDays', data.default_warranty_days);
           }
           if (data.landing_services !== undefined) {
             try {
@@ -427,6 +437,7 @@ export const ThemeProvider = ({ children }) => {
       setContactEmail: setContactEmailAndPersist,
       contactPhone,
       setContactPhone: setContactPhoneAndPersist,
+      defaultWarrantyDays,
       landingServices,
       setLandingServices: setLandingServicesAndPersist,
       landingTestimonials,

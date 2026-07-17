@@ -78,6 +78,7 @@ export default function LandingPage() {
         contactSchedule,
         contactPhone,
         contactEmail,
+        defaultWarrantyDays,
         landingServices,
         landingTestimonials
     } = useTheme();
@@ -87,7 +88,7 @@ export default function LandingPage() {
     const handleQuickTrack = (e) => {
         e.preventDefault();
         if (quickTicket.trim()) {
-            navigate(`/rastrear?ticket=${encodeURIComponent(quickTicket.trim().toUpperCase())}`);
+            navigate(`/rastrear?ticketId=${encodeURIComponent(quickTicket.trim().toUpperCase())}`);
         }
     };
 
@@ -115,17 +116,17 @@ export default function LandingPage() {
                 <div className="container hero-container">
                     <div className="hero-content">
                         <div className="hero-badge anim-hero-1">
-                            <Sparkles size={14} />
-                            <span>Servicio Técnico Profesional</span>
+                            <Sparkles size={16} />
+                            <span>Centro de Servicio Tecnico</span>
                         </div>
 
                         <h1 className="hero-title anim-hero-2">
-                            Restauramos tu tecnología con <span className="text-accent">precisión experta</span>
+                            Reparacion profesional para <span className="text-accent">todos tus dispositivos</span>
                         </h1>
 
                         <p className="hero-description anim-hero-3">
-                            Diagnóstico inmediato, refacciones originales y garantía en cada reparación.
-                            Smartphones, laptops, computadoras y consolas.
+                            Diagnostico express, refacciones originales y garantia por escrito en cada servicio.
+                            Celulares, laptops, consolas, tablets y mas.
                         </p>
 
                         <div className="hero-buttons anim-hero-4">
@@ -167,9 +168,9 @@ export default function LandingPage() {
                     <div className="container">
                         <div className="stats-grid">
                             {[
-                                { value: '5,000+', label: 'Equipos Reparados' },
+                                { value: '500+', label: 'Equipos Reparados' },
                                 { value: '98%', label: 'Clientes Satisfechos' },
-                                { value: '30 Días', label: 'Garantía Completa' },
+                                { value: `${defaultWarrantyDays || 30} Días`, label: 'Garantía Completa' },
                                 { value: '<24h', label: 'Tiempo Promedio' }
                             ].map((stat, i) => (
                                 <Reveal key={i} delay={i * 80}>

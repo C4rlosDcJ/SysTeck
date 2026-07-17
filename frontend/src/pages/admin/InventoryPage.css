@@ -4,7 +4,7 @@
 
 .inventory-page {
     padding: var(--sp-8);
-    background: radial-gradient(circle at 10% 90%, rgba(var(--color-primary-rgb), 0.03) 0%, transparent 50%), var(--color-bg);
+    background: var(--color-bg);
     min-height: 100vh;
     animation: fadeIn var(--transition-normal);
 }
@@ -25,21 +25,20 @@
 }
 
 .inv-stat-card {
-    background: linear-gradient(145deg, var(--color-bg-card) 0%, var(--dash-card-gradient-end) 100%);
+    background: var(--color-bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: var(--sp-5);
     display: flex;
     align-items: center;
     gap: var(--sp-4);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-normal);
+    transition: border-color var(--transition-normal);
 }
 
 .inv-stat-card:hover {
     border-color: var(--color-border-strong);
-    transform: translateY(-2px);
-    box-shadow: var(--dash-card-hover-shadow);
 }
 
 .inv-stat-icon {
@@ -54,18 +53,21 @@
 }
 
 .inv-stat-value {
-    font-size: var(--font-2xl);
-    font-weight: 800;
+    font-family: var(--font-mono);
+    font-size: var(--font-xl);
+    font-weight: 600;
     line-height: 1.1;
     color: var(--color-text);
+    letter-spacing: 0.02em;
 }
 
 .inv-stat-label {
+    font-family: var(--font-mono);
     font-size: var(--font-xs);
     color: var(--color-text-secondary);
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     margin-top: 2px;
 }
 
@@ -135,26 +137,24 @@
     height: 8px;
     border-radius: 50%;
     display: inline-block;
-    box-shadow: 0 0 6px currentColor;
 }
 
 .stock-cell {
-    font-weight: 700;
-    font-size: var(--font-sm);
-    padding: 3px var(--sp-2);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: var(--font-xs);
+    padding: 2px 6px;
     border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
 }
 
 .stock-ok { 
     color: #10b981; 
-    background: rgba(16, 185, 129, 0.08); 
-    border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 .stock-low { 
     color: #f59e0b; 
-    background: rgba(245, 158, 11, 0.08); 
-    border: 1px solid rgba(245, 158, 11, 0.15);
 }
 
 .stock-out { 

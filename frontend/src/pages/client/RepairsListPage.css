@@ -203,7 +203,7 @@
 
 .repair-grid-card:hover .view-detail-card-action {
     background: var(--color-primary);
-    color: white;
+    color: var(--color-primary-contrast) !important;
 }
 
 /* Responsive */

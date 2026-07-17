@@ -5,11 +5,11 @@ import { Save, RefreshCw, ShieldCheck, Building, Palette, Check, LayoutGrid, Upl
 import './SettingsPage.css';
 
 const ACCENT_PALETTE = [
-    { name: 'Rosa SysTeck', value: '#e63358' },
-    { name: 'Azul Moderno', value: '#3b82f6' },
-    { name: 'Esmeralda', value: '#10b981' },
-    { name: 'Violeta Tecnológico', value: '#a855f7' },
-    { name: 'Ámbar Cálido', value: '#f59e0b' }
+    { name: 'Nothing Red', value: '#ff003c' },
+    { name: 'Apple Blue', value: '#0070f3' },
+    { name: 'Carbon Black', value: '#1a1a1a' },
+    { name: 'Pure White', value: '#ffffff' },
+    { name: 'Slate Grey', value: '#71717a' }
 ];
 
 export default function SettingsPage() {
@@ -62,7 +62,7 @@ export default function SettingsPage() {
 
     // Formulario de nuevo servicio
     const [showServiceForm, setShowServiceForm] = useState(false);
-    const [newService, setNewService] = useState({ title: '', description: '', color: '#e63358', icon: 'smartphone' });
+    const [newService, setNewService] = useState({ title: '', description: '', color: '#3b82f6', icon: 'smartphone' });
     const [showApiKey, setShowApiKey] = useState(false);
 
     const handleLogoUpload = (e) => {
@@ -162,7 +162,7 @@ export default function SettingsPage() {
         if (!newService.title.trim()) return;
         const updated = [...landingServices, newService];
         setLandingServices(updated);
-        setNewService({ title: '', description: '', color: '#e63358', icon: 'smartphone' });
+        setNewService({ title: '', description: '', color: '#3b82f6', icon: 'smartphone' });
         setShowServiceForm(false);
     };
 
@@ -534,7 +534,7 @@ export default function SettingsPage() {
                         </div>
 
                         {showServiceForm && (
-                            <form onSubmit={handleAddService} className="settings-form animate-fadeIn" style={{ background: 'var(--color-bg-elevated)', padding: 'var(--sp-4)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-primary)', marginBottom: 'var(--sp-4)' }}>
+                            <form onSubmit={handleAddService} className="settings-form animate-fadeIn" style={{ background: 'var(--color-bg-elevated)', padding: 'var(--sp-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', marginBottom: 'var(--sp-4)' }}>
                                 <h3 style={{ fontSize: 'var(--font-sm)', fontWeight: 600, marginBottom: 'var(--sp-3)' }}>Nuevo Servicio</h3>
                                 <div className="grid grid-2">
                                     <div className="input-group">
@@ -597,8 +597,8 @@ export default function SettingsPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--sp-3)' }}>
                             {(landingServices || []).map((service, idx) => (
                                 <div key={idx} style={{ display: 'flex', gap: 'var(--sp-3)', padding: 'var(--sp-3)', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', background: `${service.color}1e`, color: service.color, borderRadius: 'var(--radius-sm)', flexShrink: 0 }}>
-                                        <Wrench size={20} />
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', borderRadius: 'var(--radius-sm)', flexShrink: 0 }}>
+                                        <Wrench size={18} />
                                     </div>
                                     <div style={{ flexGrow: 1, paddingRight: 'var(--sp-6)' }}>
                                         <h4 style={{ fontWeight: 600, fontSize: 'var(--font-sm)' }}>{service.title}</h4>
@@ -607,7 +607,8 @@ export default function SettingsPage() {
                                     <button
                                         type="button"
                                         onClick={() => handleDeleteService(idx)}
-                                        style={{ position: 'absolute', top: 'var(--sp-2)', right: 'var(--sp-2)', background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', padding: '4px' }}
+                                        className="service-delete-btn"
+                                        style={{ position: 'absolute', top: 'var(--sp-2)', right: 'var(--sp-2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                                         title="Eliminar especialidad"
                                     >
                                         <Trash2 size={16} />

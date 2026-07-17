@@ -192,9 +192,7 @@ function TrackRepairPage() {
             
             <main className="track-container animate-fadeIn" style={{ paddingTop: '100px' }}>
                 <div className="track-header-section">
-                    <button onClick={() => navigate('/')} className="btn btn-secondary btn-sm">
-                        <ChevronLeft size={16} /> Volver al Inicio
-                    </button>
+
                     
                     <h1 className="mt-md">Rastrear mi Servicio</h1>
                     <p className="text-muted">Ingresa tu número de ticket o folio de compra para conocer el estado actual.</p>

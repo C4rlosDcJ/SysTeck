@@ -277,7 +277,7 @@ export default function NewRepairPage() {
                         
                         {selectedCustomer ? (
                             <div className="selected-customer">
-                                <div className="customer-avatar">
+                                <div className="new-repair-customer-avatar">
                                     {selectedCustomer.first_name[0]}{selectedCustomer.last_name[0]}
                                 </div>
                                 <div className="customer-info">

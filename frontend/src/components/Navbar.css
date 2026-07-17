@@ -30,14 +30,13 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    font-size: var(--font-size-xl);
-    font-weight: 800;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
     color: var(--color-text-primary);
     text-decoration: none;
-}
-
-.logo-icon {
-    font-size: 1.5rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 /* Menu */

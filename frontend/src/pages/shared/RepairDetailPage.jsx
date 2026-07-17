@@ -416,7 +416,7 @@ export default function RepairDetailPage() {
                 {/* Progress Bar (Visual) */}
                 <div className="status-progress-bar mt-lg">
                     <div className="progress-track">
-                        <div className="progress-fill" style={{ width: `${progressPercent}%`, backgroundColor: currentStatusColor }} />
+                        <div className="progress-fill" style={{ width: `${progressPercent}%`, backgroundColor: 'var(--color-primary)' }} />
                     </div>
                 </div>
             </header>
@@ -789,9 +789,9 @@ export default function RepairDetailPage() {
                         ) : (
                             <div className="mt-md flex flex-col gap-sm">
                                 <div className="flex justify-between text-sm"><span>Total Estimado</span> <strong className="text-lg">{formatCurrency(repair.total_cost)}</strong></div>
-                                <div className="flex justify-between text-sm text-success"><span>Anticipo</span> <span>{formatCurrency(repair.advance_payment)}</span></div>
+                                <div className="flex justify-between text-sm text-secondary"><span>Anticipo</span> <span>{formatCurrency(repair.advance_payment)}</span></div>
                                 <div className="divider my-1"></div>
-                                <div className="flex justify-between text-md font-bold text-error"><span>Restante</span> <span>{formatCurrency(repair.total_cost - repair.advance_payment)}</span></div>
+                                <div className="flex justify-between text-md font-bold"><span>Restante</span> <span>{formatCurrency(repair.total_cost - repair.advance_payment)}</span></div>
                             </div>
                         )}
 
@@ -800,7 +800,6 @@ export default function RepairDetailPage() {
                             <button
                                 className="btn btn-primary w-full mt-md"
                                 onClick={() => navigate(`/admin/pos?repair_id=${repair.id}`)}
-                                style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }}
                             >
                                 <ShoppingCart size={16} />
                                 Cobrar en POS — {formatCurrency(repair.total_cost - (repair.advance_payment || 0))}
@@ -809,8 +808,8 @@ export default function RepairDetailPage() {
                     </div>
 
                     {/* Garantía */}
-                    <div className="card" style={{ borderTop: '3px solid var(--color-success)' }}>
-                        <div className="card-header"><ShieldCheck size={18} className="text-success"/> <h3>Garantía</h3></div>
+                    <div className="card">
+                        <div className="card-header"><ShieldCheck size={18} className="text-secondary"/> <h3>Garantía</h3></div>
                         <div className="mt-sm flex flex-col gap-sm">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted">Días pactados</span>
@@ -933,9 +932,7 @@ export default function RepairDetailPage() {
 
                             {/* Botón de reclamación */}
                             {repair.status === 'delivered' && (isAdmin || user?.role === 'client') && (
-                                <button type="button" className="btn btn-primary w-full mt-sm" onClick={() => setShowWarrantyModal(true)}
-                                    style={{ background: remainingWarranty > 0 ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'var(--color-bg-elevated)', boxShadow: remainingWarranty > 0 ? '0 4px 12px rgba(34,197,94,0.3)' : 'none', color: remainingWarranty > 0 ? '#fff' : 'var(--color-text-muted)' }}
-                                >
+                                <button type="button" className="btn btn-primary w-full mt-sm" onClick={() => setShowWarrantyModal(true)}>
                                     <Wrench size={16} />
                                     {isAdmin ? 'Registrar Ingreso por Garantía' : 'Solicitar Garantía'}
                                 </button>
@@ -961,7 +958,7 @@ export default function RepairDetailPage() {
                         <div className="modern-timeline">
                             {repair.history?.map((item, index) => (
                                 <div key={item.id} className={`mtl-item ${index === 0 ? 'mlt-active' : ''}`}>
-                                    <div className="mtl-dot" style={{backgroundColor: STATUS_COLORS[item.status] || '#888', borderColor: index===0 ? `${STATUS_COLORS[item.status]}40` : 'transparent'}}></div>
+                                    <div className="mtl-dot" style={{backgroundColor: index === 0 ? (STATUS_COLORS[item.status] || '#888') : 'var(--color-bg-elevated)', borderColor: index === 0 ? 'transparent' : 'var(--color-border-strong)'}}></div>
                                     <div className="mtl-content">
                                         <strong>{STATUS_LABELS[item.status]}</strong>
                                         <span className="mtl-date">{formatDate(item.created_at)}</span>

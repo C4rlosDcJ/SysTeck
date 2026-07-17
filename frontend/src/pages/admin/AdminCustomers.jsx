@@ -255,7 +255,7 @@ export default function AdminCustomers() {
                             {filteredCustomers.map((customer) => (
                                 <div key={customer.id} className="customer-card">
                                     <div className="customer-card-header">
-                                        <div className="customer-avatar">
+                                        <div className="admin-customer-avatar">
                                             {customer.first_name?.charAt(0)}{customer.last_name?.charAt(0)}
                                         </div>
                                         <div className="customer-card-actions">

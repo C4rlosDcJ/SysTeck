@@ -170,21 +170,34 @@
 .status-badge {
     display: inline-flex;
     align-items: center;
+    gap: var(--sp-1-5);
     padding: var(--sp-1) var(--sp-3);
     border-radius: var(--radius-full);
     font-size: var(--font-xs);
     font-weight: 600;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-secondary);
 }
 
-.status-badge.status-received { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
-.status-badge.status-diagnosing { background: rgba(139, 92, 246, 0.1); color: #a78bfa; }
-.status-badge.status-waiting_approval { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
-.status-badge.status-waiting_parts { background: rgba(120, 113, 108, 0.1); color: #a8a29e; }
-.status-badge.status-repairing { background: rgba(239, 68, 68, 0.1); color: #f87171; }
-.status-badge.status-quality_check { background: rgba(6, 182, 212, 0.1); color: #22d3ee; }
-.status-badge.status-ready { background: rgba(34, 197, 94, 0.1); color: #4ade80; }
-.status-badge.status-delivered { background: rgba(132, 204, 22, 0.1); color: #a3e635; }
-.status-badge.status-cancelled { background: rgba(107, 114, 128, 0.1); color: #9ca3af; }
+.status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-badge.status-received::before    { background: #3b82f6; }
+.status-badge.status-diagnosing::before  { background: #a855f7; }
+.status-badge.status-waiting_approval::before { background: #f59e0b; }
+.status-badge.status-waiting_parts::before    { background: #6b7280; }
+.status-badge.status-repairing::before   { background: #ef4444; }
+.status-badge.status-quality_check::before    { background: #06b6d4; }
+.status-badge.status-ready::before       { background: #10b981; }
+.status-badge.status-delivered::before   { background: #84cc16; }
+.status-badge.status-cancelled::before   { background: #6b7280; }
 
 .repairs-cost {
     font-weight: 700;
