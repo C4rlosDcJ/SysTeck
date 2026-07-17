@@ -40,7 +40,7 @@ export default function InventoryPage() {
     const [form, setForm] = useState({
         name: '', sku: '', barcode: '', description: '',
         category_id: '', purchase_price: '', sale_price: '',
-        stock: '', min_stock: '5'
+        stock: '', min_stock: '5', is_unique: false
     });
 
     const [stockForm, setStockForm] = useState({
@@ -90,7 +90,7 @@ export default function InventoryPage() {
     // Product CRUD
     const openNewProduct = () => {
         setEditingProduct(null);
-        setForm({ name: '', sku: '', barcode: '', description: '', category_id: '', purchase_price: '', sale_price: '', stock: '0', min_stock: '5' });
+        setForm({ name: '', sku: '', barcode: '', description: '', category_id: '', purchase_price: '', sale_price: '', stock: '0', min_stock: '5', is_unique: false });
         setShowProductModal(true);
     };
 
@@ -105,7 +105,8 @@ export default function InventoryPage() {
             purchase_price: product.purchase_price || '',
             sale_price: product.sale_price || '',
             stock: product.stock,
-            min_stock: product.min_stock
+            min_stock: product.min_stock,
+            is_unique: !!product.is_unique
         });
         setShowProductModal(true);
     };
@@ -340,7 +341,12 @@ export default function InventoryPage() {
                                 <tr key={p.id}>
                                     <td><span className="font-mono" style={{ fontSize: 'var(--font-xs)', fontWeight: 600 }}>{p.sku || 'N/A'}</span></td>
                                     <td>
-                                        <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{p.name}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{p.name}</span>
+                                            {p.is_unique ? (
+                                                <span style={{ fontSize: '9px', fontWeight: 700, background: 'rgba(255, 255, 255, 0.08)', border: '1px solid var(--color-border-strong)', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.02em' }}>Único</span>
+                                            ) : null}
+                                        </div>
                                         {p.barcode && <span style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>{p.barcode}</span>}
                                     </td>
                                     <td>
@@ -356,10 +362,18 @@ export default function InventoryPage() {
                                     <td>{formatCurrency(p.purchase_price)}</td>
                                     <td style={{ fontWeight: 700, color: 'var(--color-text)' }}>{formatCurrency(p.sale_price)}</td>
                                     <td>
-                                        <span className={`stock-cell ${p.stock === 0 ? 'stock-out' : p.stock <= p.min_stock ? 'stock-low' : 'stock-ok'}`}>
-                                            {p.stock}
-                                        </span>
-                                        <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginLeft: 6 }}>/ mín {p.min_stock}</span>
+                                        {p.is_unique ? (
+                                            <span className={`stock-cell ${p.stock === 0 ? 'stock-out' : 'stock-ok'}`} style={{ textTransform: 'uppercase', fontSize: '9px', fontWeight: 700 }}>
+                                                {p.stock === 0 ? 'Agotado' : 'Disponible'}
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span className={`stock-cell ${p.stock === 0 ? 'stock-out' : p.stock <= p.min_stock ? 'stock-low' : 'stock-ok'}`}>
+                                                    {p.stock}
+                                                </span>
+                                                <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginLeft: 6 }}>/ mín {p.min_stock}</span>
+                                            </>
+                                        )}
                                     </td>
                                     <td>
                                         <div className="product-actions">
@@ -448,21 +462,68 @@ export default function InventoryPage() {
                                 </div>
                             </div>
 
-                            <div className="form-grid">
-                                <div className="input-group">
-                                    <label>Stock Inicial</label>
-                                    <input className="input" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} disabled={editingProduct !== null} />
-                                </div>
-                                <div className="input-group">
-                                    <label>Stock Mínimo</label>
-                                    <input className="input" type="number" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: e.target.value })} />
-                                </div>
-                            </div>
+                            <div className="input-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', margin: 'var(--sp-2) 0' }}>
+                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                     <span style={{ fontWeight: 600, fontSize: 'var(--font-sm)', color: 'var(--color-text)' }}>¿Producto Único?</span>
+                                     <span className="text-muted" style={{ fontSize: 'var(--font-xs)', lineHeight: 1.3 }}>Venta única de inventario (ej. celular usado, equipo específico). Al venderse se agota.</span>
+                                 </div>
+                                 <label className="switch-wrapper" style={{ position: 'relative', display: 'inline-block', width: '42px', height: '22px', flexShrink: 0 }}>
+                                     <input
+                                         type="checkbox"
+                                         checked={form.is_unique}
+                                         onChange={(e) => {
+                                             const isChecked = e.target.checked;
+                                             setForm({
+                                                 ...form,
+                                                 is_unique: isChecked,
+                                                 stock: isChecked ? '1' : form.stock,
+                                                 min_stock: isChecked ? '0' : form.min_stock
+                                             });
+                                         }}
+                                         style={{ opacity: 0, width: 0, height: 0 }}
+                                     />
+                                     <span className="slider" style={{
+                                         position: 'absolute',
+                                         cursor: 'pointer',
+                                         top: 0,
+                                         left: 0,
+                                         right: 0,
+                                         bottom: 0,
+                                         backgroundColor: form.is_unique ? 'var(--color-primary)' : 'rgba(255,255,255,0.02)',
+                                         border: `1.5px solid ${form.is_unique ? 'var(--color-primary)' : 'var(--color-border-strong)'}`,
+                                         transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                         borderRadius: '22px'
+                                     }}>
+                                         <span style={{
+                                             position: 'absolute',
+                                             content: '""',
+                                             height: '14px',
+                                             width: '14px',
+                                             left: form.is_unique ? '23px' : '3px',
+                                             bottom: '2.5px',
+                                             backgroundColor: form.is_unique ? 'var(--color-primary-contrast)' : 'var(--color-text-secondary)',
+                                             transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                             borderRadius: '50%'
+                                         }} />
+                                     </span>
+                                 </label>
+                             </div>
 
-                            <div className="input-group">
-                                <label>Descripción del Producto</label>
-                                <textarea className="input" rows="2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles o especificaciones..." />
-                            </div>
+                             <div className="form-grid">
+                                 <div className="input-group">
+                                     <label>Stock Inicial</label>
+                                     <input className="input" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} disabled={editingProduct !== null || form.is_unique} />
+                                 </div>
+                                 <div className="input-group">
+                                     <label>Stock Mínimo</label>
+                                     <input className="input" type="number" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: e.target.value })} disabled={form.is_unique} />
+                                 </div>
+                             </div>
+
+                             <div className="input-group">
+                                 <label>Descripción del Producto</label>
+                                 <textarea className="input" rows="2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles o especificaciones..." />
+                             </div>
 
                             <div className="flex gap-sm" style={{ justifyContent: 'flex-end', marginTop: 'var(--sp-2)' }}>
                                 <button className="btn btn-secondary" onClick={() => setShowProductModal(false)}>Cancelar</button>

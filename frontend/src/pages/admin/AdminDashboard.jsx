@@ -272,8 +272,8 @@ export default function AdminDashboard() {
                     <div className="alert-banner-content">
                         <AlertTriangle className="alert-banner-icon" size={18} />
                         <span>
-                            {lowStockCount > 0 && `⚠️ Tienes ${lowStockCount} productos con bajo stock. `}
-                            {pendingApprovalCount > 0 && `⏳ ${pendingApprovalCount} reparaciones esperan aprobación.`}
+                            {lowStockCount > 0 && `Tienes ${lowStockCount} productos con bajo stock. `}
+                            {pendingApprovalCount > 0 && `${pendingApprovalCount} reparaciones esperan aprobación.`}
                         </span>
                     </div>
                     <div className="header-actions">

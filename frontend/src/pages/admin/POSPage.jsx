@@ -54,6 +54,15 @@ export default function POSPage() {
     // Toast
     const [toast, setToast] = useState(null);
 
+    // Paginación y Carrito Móvil
+    const [currentPage, setCurrentPage] = useState(1);
+    const [showMobileCart, setShowMobileCart] = useState(false);
+
+    // Reset de página al cambiar de modo
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [mode, selectedCategory, search, repairSearch, pendingSearch]);
+
     const searchRef = useRef(null);
     const customerSearchTimeout = useRef(null);
     const loadedRepairIdRef = useRef(null);
@@ -169,6 +178,10 @@ export default function POSPage() {
             const existing = prev.find(i => i.key === key);
 
             if (existing) {
+                if (type === 'product' && item.is_unique) {
+                    showToast('Este es un producto único, no se puede añadir más de 1 unidad', 'error');
+                    return prev;
+                }
                 if (type === 'product' && existing.quantity >= item.stock) {
                     showToast('Sin stock disponible', 'error');
                     return prev;
@@ -187,7 +200,8 @@ export default function POSPage() {
                 unit_price: parseFloat(type === 'product' ? item.sale_price : item.base_price) || 0,
                 quantity: 1,
                 discount: 0,
-                maxStock: type === 'product' ? item.stock : 999
+                maxStock: type === 'product' ? (item.is_unique ? 1 : item.stock) : 999,
+                is_unique: type === 'product' ? !!item.is_unique : false
             }];
         });
     }, []);
@@ -309,6 +323,10 @@ export default function POSPage() {
             if (item.key !== key) return item;
             // Repairs can't change quantity
             if (item.type === 'repair') return item;
+            if (item.type === 'product' && item.is_unique && delta > 0) {
+                showToast('Este es un producto único, no se puede añadir más de 1 unidad', 'error');
+                return item;
+            }
             const newQty = item.quantity + delta;
             if (newQty < 1) return item;
             if (item.type === 'product' && newQty > item.maxStock) {
@@ -546,21 +564,28 @@ export default function POSPage() {
                     {mode === 'products' ? (
                         /* ── Products Tab ── */
                         filteredProducts.length > 0 ? (
-                            filteredProducts.map(product => (
+                            filteredProducts.slice((currentPage - 1) * 10, currentPage * 10).map(product => (
                                 <div
                                     key={product.id}
                                     className="pos-product-card"
                                     style={{ '--cat-color': product.category_color }}
                                     onClick={() => product.stock > 0 && addToCart(product, 'product')}
                                 >
-                                    <span className="pos-product-name">{product.name}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                        <span className="pos-product-name">{product.name}</span>
+                                        {product.is_unique ? (
+                                            <span style={{ fontSize: '8px', fontWeight: 700, background: 'rgba(255, 255, 255, 0.08)', border: '1px solid var(--color-border-strong)', padding: '1px 4px', borderRadius: '3px', textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>Único</span>
+                                        ) : null}
+                                    </div>
                                     <span className="pos-product-meta">{product.sku}</span>
                                     <span className="pos-product-price">{formatCurrency(product.sale_price)}</span>
                                     <span className={`pos-product-stock ${
                                         product.stock === 0 ? 'no-stock' :
+                                        product.is_unique ? 'in-stock' :
                                         product.stock <= product.min_stock ? 'low-stock' : 'in-stock'
                                     }`}>
                                         {product.stock === 0 ? 'Sin stock' :
+                                         product.is_unique ? 'Único disponible' :
                                          product.stock <= product.min_stock ? `¡${product.stock} uds!` :
                                          `${product.stock} uds`}
                                     </span>
@@ -576,7 +601,7 @@ export default function POSPage() {
                     ) : mode === 'services' ? (
                         /* ── Services Tab ── */
                         filteredServices.length > 0 ? (
-                            filteredServices.map(service => (
+                            filteredServices.slice((currentPage - 1) * 10, currentPage * 10).map(service => (
                                 <div
                                     key={service.id}
                                     className="pos-service-card"
@@ -597,7 +622,7 @@ export default function POSPage() {
                     ) : mode === 'pending_sales' ? (
                         /* ── Pending Web Sales Tab ── */
                         pendingSales.length > 0 ? (
-                            pendingSales.map(sale => {
+                            pendingSales.slice((currentPage - 1) * 10, currentPage * 10).map(sale => {
                                 const isLoaded = loadedPendingSaleId === sale.id;
                                 return (
                                     <div
@@ -606,12 +631,12 @@ export default function POSPage() {
                                         onClick={() => !isLoaded && loadPendingSaleToCart(sale)}
                                         style={{ borderColor: isLoaded ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.08)' }}
                                     >
-                                        <div className="repair-card-header">
-                                            <span className="repair-card-ticket" style={{ color: 'var(--color-primary)' }}>
-                                                <ShoppingBag size={12} />
+                                        <div className="repair-card-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', marginBottom: '8px' }}>
+                                            <span className="repair-card-ticket" style={{ color: 'var(--color-text)', fontSize: '0.8rem' }}>
+                                                <ShoppingBag size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                                                 {sale.order_number}
                                             </span>
-                                            <span className="status-badge-mini status-pending">
+                                            <span className="status-badge-mini status-pending" style={{ fontSize: '0.55rem', padding: '2px 6px' }}>
                                                 Pendiente
                                             </span>
                                         </div>
@@ -646,27 +671,29 @@ export default function POSPage() {
                                                     gap: '4px',
                                                     fontSize: '0.75rem',
                                                     padding: '6px 8px',
-                                                    borderColor: 'rgba(239, 68, 68, 0.3)',
-                                                    color: '#f87171',
-                                                    background: 'rgba(239, 68, 68, 0.05)',
+                                                    borderColor: 'var(--color-border)',
+                                                    color: 'var(--color-text-secondary)',
+                                                    background: 'rgba(255, 255, 255, 0.02)',
                                                     cursor: 'pointer',
                                                     borderRadius: 'var(--radius-sm, 6px)',
                                                     transition: 'all 0.2s ease'
                                                 }}
                                                 onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
-                                                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+                                                    e.currentTarget.style.background = '#fff';
+                                                    e.currentTarget.style.color = '#000';
+                                                    e.currentTarget.style.borderColor = '#fff';
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
-                                                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                                                    e.currentTarget.style.color = 'var(--color-text-secondary)';
+                                                    e.currentTarget.style.borderColor = 'var(--color-border)';
                                                 }}
                                             >
                                                 <X size={12} /> Cancelar Pedido
                                             </button>
                                         </div>
                                         {isLoaded && (
-                                            <span className="repair-in-cart-badge" style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}>
+                                            <span className="repair-in-cart-badge">
                                                 <CheckCircle2 size={12} /> Cargado
                                             </span>
                                         )}
@@ -683,7 +710,7 @@ export default function POSPage() {
                     ) : (
                         /* ── Repairs Tab ── */
                         billableRepairs.length > 0 ? (
-                            billableRepairs.map(repair => {
+                            billableRepairs.slice((currentPage - 1) * 10, currentPage * 10).map(repair => {
                                 const isInCart = cart.some(i => i.key === `r-${repair.id}`);
                                 return (
                                     <div
@@ -742,21 +769,59 @@ export default function POSPage() {
                         )
                     )}
                 </div>
+
+                {/* Controles de Paginación del Catálogo */}
+                {(() => {
+                    const listLength = mode === 'products' ? filteredProducts.length
+                                     : mode === 'services' ? filteredServices.length
+                                     : mode === 'pending_sales' ? pendingSales.length
+                                     : billableRepairs.length;
+                    const totalPages = Math.ceil(listLength / 10);
+                    if (totalPages <= 1) return null;
+                    return (
+                        <div className="pos-pagination" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-4)', padding: '12px', borderTop: '1px solid var(--color-border)', background: 'rgba(255, 255, 255, 0.01)' }}>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                style={{ padding: '6px 12px', fontSize: '11px' }}
+                            >
+                                Anterior
+                            </button>
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                                Página {currentPage} de {totalPages}
+                            </span>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                style={{ padding: '6px 12px', fontSize: '11px' }}
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    );
+                })()}
             </div>
 
-            {/* ═══ RIGHT: Cart ═══ */}
-            <div className="pos-cart">
+            {/* ═══ RIGHT: Cart (Condicional en Móvil) ═══ */}
+            <div className={`pos-cart ${showMobileCart ? 'mobile-open' : ''}`}>
                 <div className="pos-cart-header">
                     <h2>
                         <ShoppingCart size={18} />
                         Carrito
                         {cart.length > 0 && <span className="cart-count">{cart.length}</span>}
                     </h2>
-                    {cart.length > 0 && (
-                        <button className="btn btn-ghost btn-sm" onClick={clearCart}>
-                            <Trash2 size={14} /> Limpiar
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {cart.length > 0 && (
+                            <button className="btn btn-ghost btn-sm" onClick={clearCart}>
+                                <Trash2 size={14} /> Limpiar
+                            </button>
+                        )}
+                        <button className="btn btn-ghost btn-icon mobile-cart-close" onClick={() => setShowMobileCart(false)} style={{ display: 'none' }}>
+                            <X size={18} />
                         </button>
-                    )}
+                    </div>
                 </div>
 
                 {/* Customer Selector */}
@@ -807,29 +872,29 @@ export default function POSPage() {
                 {/* Linked Pending Web Sale */}
                 {loadedPendingSaleId && (
                     <div className="pos-repair-link" style={{ marginBottom: 'var(--sp-2)' }}>
-                        <div className="repair-link-badge" style={{ backgroundColor: 'rgba(230, 51, 88, 0.1)', color: 'var(--color-primary)', borderColor: 'rgba(230, 51, 88, 0.2)' }}>
+                        <div className="repair-link-badge" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', color: 'var(--color-text)', borderColor: 'var(--color-border)' }}>
                             <ShoppingBag size={14} />
                             <span>Pedido Web Cargado</span>
                             <button className="btn btn-ghost btn-sm" onClick={() => {
                                 clearCart();
-                            }} style={{ marginLeft: 'auto', color: 'var(--color-primary)' }}>
+                            }} style={{ marginLeft: 'auto', color: 'var(--color-text-secondary)' }}>
                                 <X size={12} />
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Linked Repair */}
+                {/* Linked Repair Badge */}
                 {linkedRepair && (
                     <div className="pos-repair-link">
                         <div className="repair-link-badge">
-                            <Wrench size={14} />
-                            <span>Reparación vinculada: </span>
-                            <span className="ticket-num">{linkedRepair.ticket_number}</span>
+                            <Hash size={14} />
+                            <span>Reparación Vinculada: {linkedRepair.ticket_number}</span>
                             <button className="btn btn-ghost btn-sm" onClick={() => {
+                                // Remove repair item from cart
+                                const repairKey = `r-${linkedRepair.id}`;
+                                setCart(prev => prev.filter(item => item.key !== repairKey));
                                 setLinkedRepair(null);
-                                // Remove repair items from cart
-                                setCart(prev => prev.filter(i => i.type !== 'repair'));
                             }} style={{ marginLeft: 'auto' }}>
                                 <X size={12} />
                             </button>
@@ -841,47 +906,46 @@ export default function POSPage() {
                 <div className="pos-cart-items">
                     {cart.length === 0 ? (
                         <div className="pos-cart-empty">
-                            <ShoppingCart size={36} style={{ opacity: 0.2 }} />
-                            <p>Carrito vacío</p>
-                            <p style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-muted)' }}>
-                                Selecciona productos, servicios o una reparación
-                            </p>
+                            <ShoppingCart size={40} className="empty-icon" />
+                            <h3>Carrito vacío</h3>
+                            <p>Haz clic en los productos para agregarlos</p>
                         </div>
                     ) : (
                         cart.map(item => (
-                            <div key={item.key} className={`cart-item ${item.isRepair ? 'cart-item-repair' : ''}`}>
+                            <div key={item.key} className={`cart-item ${item.type === 'repair' ? 'cart-item-repair' : ''}`}>
                                 <div className="cart-item-info">
                                     <div className="cart-item-name">
-                                        {item.isRepair && <Wrench size={12} className="cart-repair-icon" />}
                                         {item.description}
                                     </div>
                                     <div className="cart-item-price">
-                                        {item.isRepair ? 'Saldo pendiente' : `${formatCurrency(item.unit_price)} c/u`}
+                                        {formatCurrency(item.unit_price)}
+                                        {item.discount > 0 && (
+                                            <span style={{ fontSize: '10px', color: 'var(--color-primary)', marginLeft: '6px' }}>
+                                                (desc. -{formatCurrency(item.discount)})
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                                {!item.isRepair && (
+                                {item.type !== 'repair' && (
                                     <div className="cart-item-qty">
                                         <button onClick={() => updateQuantity(item.key, -1)}>
                                             <Minus size={12} />
                                         </button>
-                                        <span>{item.quantity}</span>
+                                        <span style={{ minWidth: '16px', textAlign: 'center', fontSize: 'var(--font-xs)', fontWeight: 'bold' }}>{item.quantity}</span>
                                         <button onClick={() => updateQuantity(item.key, 1)}>
                                             <Plus size={12} />
                                         </button>
                                     </div>
                                 )}
-                                <div className="cart-item-total">
-                                    {formatCurrency(item.unit_price * item.quantity)}
-                                </div>
-                                <button className="cart-item-remove" onClick={() => removeFromCart(item.key)}>
-                                    <X size={14} />
+                                <button className="cart-item-remove" onClick={() => removeFromCart(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         ))
                     )}
                 </div>
 
-                {/* Cart Footer: Totals + Checkout */}
+                {/* Cart Footer */}
                 {cart.length > 0 && (
                     <div className="pos-cart-footer">
                         <div className="cart-totals">
@@ -889,15 +953,17 @@ export default function POSPage() {
                                 <span>Subtotal</span>
                                 <span>{formatCurrency(subtotal)}</span>
                             </div>
-                            <div className="cart-total-row cart-discount-row">
-                                <span>Descuento</span>
+                            <div className="cart-total-row">
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    Descuento General
+                                </span>
                                 <input
                                     type="number"
                                     className="input input-sm"
+                                    placeholder="$0.00"
                                     value={discount}
                                     onChange={(e) => setDiscount(e.target.value)}
-                                    min="0"
-                                    id="pos-discount"
+                                    style={{ width: '80px', textAlign: 'right' }}
                                 />
                             </div>
                             <div className="cart-total-row grand-total">
@@ -906,8 +972,8 @@ export default function POSPage() {
                             </div>
                         </div>
 
-                        {/* Payment Method */}
-                        <div className="pos-payment-methods">
+                        {/* Payment Method Selector */}
+                        <div className="payment-method-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}>
                             <button
                                 className={`payment-method-btn ${paymentMethod === 'cash' ? 'selected' : ''}`}
                                 onClick={() => setPaymentMethod('cash')}
@@ -933,21 +999,25 @@ export default function POSPage() {
 
                         {/* Cash input */}
                         {paymentMethod === 'cash' && (
-                            <div className="cash-input-row">
-                                <label>Recibido:</label>
-                                <input
-                                    type="number"
-                                    className="input input-sm"
-                                    placeholder="$0.00"
-                                    value={amountReceived}
-                                    onChange={(e) => setAmountReceived(e.target.value)}
-                                    id="pos-amount-received"
-                                />
-                                {parseFloat(amountReceived) > 0 && (
-                                    <span className="change-display">
-                                        Cambio: {formatCurrency(changeAmount)}
+                            <div className="cash-payment-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
+                                <div className="cash-input-box" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+                                    <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Efectivo Recibido</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        placeholder="$0.00"
+                                        value={amountReceived}
+                                        onChange={(e) => setAmountReceived(e.target.value)}
+                                        id="pos-amount-received"
+                                        style={{ width: '100%', fontSize: '1.25rem', fontWeight: 800, textAlign: 'center', height: '42px', background: 'var(--color-bg-input)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)' }}
+                                    />
+                                </div>
+                                <div className="cash-change-box" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: parseFloat(amountReceived) >= total ? 'rgba(16, 185, 129, 0.03)' : 'rgba(255, 255, 255, 0.01)', border: parseFloat(amountReceived) >= total ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', justifyContent: 'center', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: parseFloat(amountReceived) >= total ? 'var(--color-success)' : 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cambio a Devolver</span>
+                                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: parseFloat(amountReceived) >= total ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                                        {parseFloat(amountReceived) >= total ? formatCurrency(changeAmount) : '$0.00'}
                                     </span>
-                                )}
+                                </div>
                             </div>
                         )}
 
@@ -963,6 +1033,51 @@ export default function POSPage() {
                     </div>
                 )}
             </div>
+
+            {/* Burbuja flotante de Carrito en Móvil */}
+            <button
+                className="pos-mobile-cart-badge"
+                onClick={() => setShowMobileCart(true)}
+                style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    right: '96px',
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--color-primary)',
+                    color: 'var(--color-primary-contrast)',
+                    border: 'none',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                    cursor: 'pointer',
+                    display: 'none',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 999
+                }}
+            >
+                <ShoppingCart size={24} />
+                {cart.length > 0 && (
+                    <span style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-4px',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        borderRadius: '50%',
+                        width: '22px',
+                        height: '22px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                    }}>
+                        {cart.length}
+                    </span>
+                )}
+            </button>
 
             {/* ═══ Receipt Modal ═══ */}
             <PrintReceipt

@@ -250,14 +250,14 @@
 /* ── Modern Timeline ── */
 .modern-timeline {
     position: relative;
-    padding-left: var(--sp-4);
+    padding-left: 20px;
 }
 .modern-timeline::before {
     content: '';
     position: absolute;
     left: 4px;
-    top: 0;
-    bottom: 0;
+    top: 6px;
+    bottom: 6px;
     width: 2px;
     background: var(--color-border);
     border-radius: 2px;
@@ -266,23 +266,23 @@
 .mtl-item {
     position: relative;
     padding-bottom: var(--sp-6);
-    padding-left: var(--sp-6);
 }
 .mtl-item:last-child { padding-bottom: 0; }
 
 .mtl-dot {
     position: absolute;
-    left: -4px; /* relative to modern-timeline container's padding-left */
-    top: 4px;
-    width: 14px; height: 14px;
+    left: -20px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    border: 3px solid var(--color-bg);
+    border: 2px solid var(--color-bg);
     box-shadow: 0 0 0 1px var(--color-border);
-    z-index: 1;
+    z-index: 2;
 }
 
-.mlt-active .mtl-dot {
-    box-shadow: 0 0 0 4px var(--color-primary-muted);
+.mtl-item.mlt-active .mtl-dot {
+    box-shadow: 0 0 0 3px var(--color-primary-muted);
 }
 
 .mtl-content {

@@ -844,21 +844,22 @@ export default function RepairDetailPage() {
 
                             {/* Enlace al ticket padre */}
                             {repair.parent_repair_id && (
-                                <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', padding: '10px 12px', marginTop: '4px' }}>
+                                <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '10px 12px', marginTop: '4px' }}>
                                     <span className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <AlertCircle size={14} className="text-warning" />
+                                        <AlertCircle size={14} style={{ color: 'var(--color-text-secondary)' }} />
                                         Garantía del ticket{' '}
                                         <Link to={`${isAdmin ? '/admin' : '/dashboard'}/reparaciones/${repair.parent_repair_id}`} style={{ color: 'var(--color-primary)', fontWeight: 700 }}>#{repair.parent_ticket}</Link>
                                     </span>
 
-                                    <div style={{ borderTop: '1px dashed rgba(245, 158, 11, 0.2)', marginTop: '8px', paddingTop: '8px' }}>
+                                    <div style={{ borderTop: '1px dashed var(--color-border)', marginTop: '8px', paddingTop: '8px' }}>
                                         <span className="text-xs text-muted" style={{ display: 'block', marginBottom: '4px' }}>Resolución de Garantía</span>
                                         {!(isAdmin || user?.role === 'technician') ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                 <span className={`badge text-xs`} style={{
                                                     alignSelf: 'flex-start',
-                                                    background: repair.warranty_approved === 'approved' ? 'rgba(34,197,94,0.15)' : repair.warranty_approved === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
-                                                    color: repair.warranty_approved === 'approved' ? '#22c55e' : repair.warranty_approved === 'rejected' ? '#ef4444' : '#f59e0b',
+                                                    background: repair.warranty_approved === 'approved' ? 'rgba(255, 255, 255, 0.08)' : repair.warranty_approved === 'rejected' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.04)',
+                                                    color: repair.warranty_approved === 'approved' ? 'var(--color-text)' : repair.warranty_approved === 'rejected' ? 'var(--color-text-muted)' : 'var(--color-text-secondary)',
+                                                    border: '1px solid var(--color-border)',
                                                     padding: '2px 6px',
                                                     borderRadius: '4px',
                                                     fontWeight: 600
@@ -958,7 +959,7 @@ export default function RepairDetailPage() {
                         <div className="modern-timeline">
                             {repair.history?.map((item, index) => (
                                 <div key={item.id} className={`mtl-item ${index === 0 ? 'mlt-active' : ''}`}>
-                                    <div className="mtl-dot" style={{backgroundColor: index === 0 ? (STATUS_COLORS[item.status] || '#888') : 'var(--color-bg-elevated)', borderColor: index === 0 ? 'transparent' : 'var(--color-border-strong)'}}></div>
+                                    <div className="mtl-dot" style={{backgroundColor: index === 0 ? 'var(--color-text)' : 'var(--color-bg-elevated)', borderColor: index === 0 ? 'transparent' : 'var(--color-border-strong)'}}></div>
                                     <div className="mtl-content">
                                         <strong>{STATUS_LABELS[item.status]}</strong>
                                         <span className="mtl-date">{formatDate(item.created_at)}</span>

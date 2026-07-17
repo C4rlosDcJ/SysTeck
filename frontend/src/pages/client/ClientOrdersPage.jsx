@@ -261,10 +261,10 @@ export default function ClientOrdersPage() {
                                                                  onClick={() => handleEditOrder(order, detail)}
                                                                  style={{
                                                                      padding: '8px 16px',
-                                                                     background: 'rgba(230, 51, 88, 0.1)',
-                                                                     color: 'var(--color-primary)',
-                                                                     border: '1px solid rgba(230, 51, 88, 0.2)',
-                                                                     borderRadius: '6px',
+                                                                     background: 'rgba(255, 255, 255, 0.03)',
+                                                                     color: 'var(--color-text)',
+                                                                     border: '1px solid var(--color-border)',
+                                                                     borderRadius: 'var(--radius-md)',
                                                                      fontSize: '0.75rem',
                                                                      fontWeight: '700',
                                                                      cursor: 'pointer',
@@ -274,14 +274,14 @@ export default function ClientOrdersPage() {
                                                                      transition: 'all 0.2s ease'
                                                                  }}
                                                                  onMouseEnter={(e) => {
-                                                                     e.currentTarget.style.background = 'var(--color-primary)';
-                                                                     e.currentTarget.style.color = '#fff';
-                                                                     e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                                                     e.currentTarget.style.background = '#fff';
+                                                                     e.currentTarget.style.color = '#000';
+                                                                     e.currentTarget.style.borderColor = '#fff';
                                                                  }}
                                                                  onMouseLeave={(e) => {
-                                                                     e.currentTarget.style.background = 'rgba(230, 51, 88, 0.1)';
-                                                                     e.currentTarget.style.color = 'var(--color-primary)';
-                                                                     e.currentTarget.style.borderColor = 'rgba(230, 51, 88, 0.2)';
+                                                                     e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                                                                     e.currentTarget.style.color = 'var(--color-text)';
+                                                                     e.currentTarget.style.borderColor = 'var(--color-border)';
                                                                  }}
                                                              >
                                                                  <Edit3 size={14} /> Editar Pedido

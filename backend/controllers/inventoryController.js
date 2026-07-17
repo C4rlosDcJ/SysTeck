@@ -145,7 +145,7 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
     try {
-        const { sku, barcode, name, description, category_id, purchase_price, sale_price, stock, min_stock } = req.body;
+        const { sku, barcode, name, description, category_id, purchase_price, sale_price, stock, min_stock, is_unique } = req.body;
 
         if (!name || !sale_price) {
             return res.status(400).json({ message: 'Nombre y precio de venta son obligatorios.' });
@@ -155,10 +155,10 @@ exports.createProduct = async (req, res) => {
         const finalSku = sku || `PRD-${Date.now().toString(36).toUpperCase()}`;
 
         const [result] = await db.query(
-            `INSERT INTO products (sku, barcode, name, description, category_id, purchase_price, sale_price, stock, min_stock)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO products (sku, barcode, name, description, category_id, purchase_price, sale_price, stock, min_stock, is_unique)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [finalSku, barcode || null, name, description || null, category_id || null,
-             purchase_price || 0, sale_price, stock || 0, min_stock || 5]
+             purchase_price || 0, sale_price, stock || 0, min_stock || 5, is_unique ? 1 : 0]
         );
 
         // Registrar movimiento de stock inicial si hay stock
@@ -183,7 +183,7 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { sku, barcode, name, description, category_id, purchase_price, sale_price, stock, min_stock } = req.body;
+        const { sku, barcode, name, description, category_id, purchase_price, sale_price, stock, min_stock, is_unique } = req.body;
 
         // Obtener stock actual para calcular diferencia
         const [existing] = await db.query('SELECT stock FROM products WHERE id = ?', [id]);
@@ -193,9 +193,9 @@ exports.updateProduct = async (req, res) => {
 
         await db.query(
             `UPDATE products SET sku = ?, barcode = ?, name = ?, description = ?, category_id = ?,
-             purchase_price = ?, sale_price = ?, stock = ?, min_stock = ? WHERE id = ?`,
+             purchase_price = ?, sale_price = ?, stock = ?, min_stock = ?, is_unique = ? WHERE id = ?`,
             [sku, barcode || null, name, description || null, category_id || null,
-             purchase_price || 0, sale_price, stock, min_stock || 5, id]
+             purchase_price || 0, sale_price, stock, min_stock || 5, is_unique ? 1 : 0, id]
         );
 
         // Registrar movimiento si cambió el stock

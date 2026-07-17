@@ -332,7 +332,7 @@ exports.getCatalogProducts = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT p.id, p.name, p.description, p.sale_price, p.stock,
+            SELECT p.id, p.name, p.description, p.sale_price, p.stock, p.is_unique,
                    p.category_id, pc.name as category_name, pc.color as category_color
             FROM products p
             LEFT JOIN product_categories pc ON p.category_id = pc.id

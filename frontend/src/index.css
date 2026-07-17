@@ -257,12 +257,13 @@ input, textarea, select { font-family: inherit; font-size: inherit; border: none
 
 .btn-danger {
   background: transparent;
-  border: 1px solid var(--color-error);
-  color: var(--color-error) !important;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary) !important;
 }
 .btn-danger:hover {
-  background: var(--color-error);
-  color: #ffffff !important;
+  background: #ffffff;
+  color: #000000 !important;
+  border-color: #ffffff;
 }
 
 .btn-lg { padding: var(--sp-3) var(--sp-6); font-size: var(--font-base); }
@@ -343,36 +344,53 @@ input, textarea, select { font-family: inherit; font-size: inherit; border: none
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-1-5);
-  padding: 2px var(--sp-2);
-  font-size: var(--font-xs);
-  font-weight: 600;
+  padding: 3px var(--sp-2-5);
+  font-size: 0.65rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--color-text-secondary);
 }
 
 .status-badge::before {
   content: '';
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-right: 6px;
+  background: var(--color-text-muted);
 }
 
-.status-received::before    { background: #3b82f6; }
-.status-diagnosing::before  { background: #a855f7; }
-.status-waiting_approval::before { background: #f59e0b; }
-.status-waiting_parts::before    { background: #6b7280; }
-.status-repairing::before   { background: #ef4444; }
-.status-quality_check::before    { background: #06b6d4; }
-.status-ready::before       { background: #10b981; }
-.status-delivered::before   { background: #84cc16; }
-.status-cancelled::before   { background: #6b7280; }
+.status-ready::before,
+.status-delivered::before {
+  background: var(--color-text);
+  box-shadow: 0 0 4px var(--color-text);
+}
+
+.status-ready {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.status-delivered {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.status-cancelled::before {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.status-cancelled {
+  opacity: 0.6;
+}
 
 /* =====================================================
    Tables

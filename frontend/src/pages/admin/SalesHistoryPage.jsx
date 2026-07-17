@@ -318,7 +318,7 @@ export default function SalesHistoryPage() {
                                     {selectedSale.repair_ticket && (
                                         <div>
                                             <div className="sale-detail-label">Reparación Vinculada</div>
-                                            <div className="sale-detail-value" style={{ color: 'var(--color-info)' }}>
+                                            <div className="sale-detail-value" style={{ color: 'var(--color-text)', fontWeight: 700 }}>
                                                 {selectedSale.repair_ticket}
                                             </div>
                                         </div>

@@ -126,6 +126,7 @@ export default function CatalogSection({ embedded = false, showCartButton = true
             const key = type === 'product' ? `p-${item.id}` : `s-${item.id}`;
             const existing = prev.find(c => c.key === key);
             if (existing) {
+                if (type === 'product' && item.is_unique) return prev;
                 if (type === 'product' && existing.quantity >= item.stock) return prev;
                 return prev.map(c => c.key === key ? { ...c, quantity: c.quantity + 1 } : c);
             }
@@ -137,7 +138,8 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                 name: item.name,
                 price: type === 'product' ? item.sale_price : item.base_price,
                 quantity: 1,
-                maxStock: type === 'product' ? item.stock : null,
+                maxStock: type === 'product' ? (item.is_unique ? 1 : item.stock) : null,
+                isUnique: type === 'product' ? !!item.is_unique : false,
                 categoryColor: item.category_color || null
             }];
         });
@@ -146,6 +148,7 @@ export default function CatalogSection({ embedded = false, showCartButton = true
     const updateQty = useCallback((key, delta) => {
         setCart(prev => prev.map(item => {
             if (item.key !== key) return item;
+            if (item.item_type === 'product' && item.isUnique && delta > 0) return item;
             const newQty = item.quantity + delta;
             if (newQty < 1) return item;
             if (item.maxStock && newQty > item.maxStock) return item;
@@ -486,9 +489,15 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                                                                     {product.category_name}
                                                                 </span>
                                                             )}
-                                                            <span className={`catalog-card-badge badge-stock ${isOutOfStock ? 'out' : isLowStock ? 'low' : ''}`}>
-                                                                {isOutOfStock ? 'Agotado' : isLowStock ? `Quedan ${product.stock}` : 'En stock'}
-                                                            </span>
+                                                            {product.is_unique ? (
+                                                                <span className="catalog-card-badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-strong)' }}>
+                                                                    Pieza Única
+                                                                </span>
+                                                            ) : (
+                                                                <span className={`catalog-card-badge badge-stock ${isOutOfStock ? 'out' : isLowStock ? 'low' : ''}`}>
+                                                                    {isOutOfStock ? 'Agotado' : isLowStock ? `Quedan ${product.stock}` : 'En stock'}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <h3>{product.name}</h3>
@@ -608,9 +617,15 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                                                                 {product.category_name}
                                                             </span>
                                                         )}
-                                                        <span className={`catalog-card-badge badge-stock ${isOutOfStock ? 'out' : isLowStock ? 'low' : ''}`}>
-                                                            {isOutOfStock ? 'Agotado' : isLowStock ? `Quedan ${product.stock}` : 'En stock'}
-                                                        </span>
+                                                        {product.is_unique ? (
+                                                            <span className="catalog-card-badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-strong)' }}>
+                                                                Pieza Única
+                                                            </span>
+                                                        ) : (
+                                                            <span className={`catalog-card-badge badge-stock ${isOutOfStock ? 'out' : isLowStock ? 'low' : ''}`}>
+                                                                {isOutOfStock ? 'Agotado' : isLowStock ? `Quedan ${product.stock}` : 'En stock'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <h3>{product.name}</h3>
