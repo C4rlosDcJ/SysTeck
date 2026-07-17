@@ -30,4 +30,7 @@ router.post('/:id/notes', repairController.addNote);
 // Eliminar reparación (solo admin)
 router.delete('/:id', isAdmin, repairController.delete);
 
+// Procesar ingreso por garantía (admin, técnico o cliente propietario)
+router.post('/:id/claim-warranty', repairController.claimWarranty);
+
 module.exports = router;

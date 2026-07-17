@@ -96,12 +96,15 @@ exports.trackRepair = async (req, res) => {
                         r.started_at,
                         r.completed_at,
                         r.delivered_at,
+                        r.parent_repair_id,
+                        pr.ticket_number as parent_ticket_number,
                         dt.name as device_type_name,
                         b.name as brand_name,
                         r.brand_other
                     FROM repairs r
                     LEFT JOIN device_types dt ON r.device_type_id = dt.id
                     LEFT JOIN brands b ON r.brand_id = b.id
+                    LEFT JOIN repairs pr ON r.parent_repair_id = pr.id
                     WHERE r.id = ?
                 `, [sale.repair_id]);
 
@@ -165,6 +168,8 @@ exports.trackRepair = async (req, res) => {
                 r.started_at,
                 r.completed_at,
                 r.delivered_at,
+                r.parent_repair_id,
+                pr.ticket_number as parent_ticket_number,
                 dt.name as device_type_name,
                 b.name as brand_name,
                 r.brand_other,
@@ -174,6 +179,7 @@ exports.trackRepair = async (req, res) => {
             LEFT JOIN device_types dt ON r.device_type_id = dt.id
             LEFT JOIN brands b ON r.brand_id = b.id
             LEFT JOIN users u ON r.customer_id = u.id
+            LEFT JOIN repairs pr ON r.parent_repair_id = pr.id
             WHERE r.ticket_number = ?
         `, [ticketCode]);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { repairService, userService, settingsService, uploadService, posService, BACKEND_URL } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate } from '../../utils/constants';
@@ -43,6 +43,9 @@ export default function RepairDetailPage() {
     const [technicalData, setTechnicalData] = useState({});
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
+    const [isEditingInspection, setIsEditingInspection] = useState(false);
+    const [inspectionData, setInspectionData] = useState({});
+
     const [noteText, setNoteText] = useState('');
     const [isInternal, setIsInternal] = useState(false);
     const [addingNote, setAddingNote] = useState(false);
@@ -52,6 +55,38 @@ export default function RepairDetailPage() {
     const [hoverRating, setHoverRating] = useState(0);
     const [clientReviewText, setClientReviewText] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
+
+    // States for warranty claims
+    const [showWarrantyModal, setShowWarrantyModal] = useState(false);
+    const [warrantyProblem, setWarrantyProblem] = useState('');
+    const [warrantyPriority, setWarrantyPriority] = useState('normal');
+    const [warrantyDeliveryDate, setWarrantyDeliveryDate] = useState('');
+    const [warrantyObservations, setWarrantyObservations] = useState('');
+    const [submittingWarranty, setSubmittingWarranty] = useState(false);
+
+    const handleClaimWarrantySubmit = async (e) => {
+        e.preventDefault();
+        if (!warrantyProblem.trim()) return;
+
+        try {
+            setSubmittingWarranty(true);
+            const res = await repairService.claimWarranty(id, {
+                problem_description: warrantyProblem,
+                priority: warrantyPriority,
+                estimated_delivery: warrantyDeliveryDate,
+                technical_observations: warrantyObservations
+            });
+            alert('¡Ingreso por garantía registrado con éxito!');
+            setShowWarrantyModal(false);
+            setWarrantyProblem('');
+            setWarrantyObservations('');
+            navigate(isAdmin ? `/admin/repairs/${res.repair.id}` : `/dashboard/reparaciones/${res.repair.id}`);
+        } catch (err) {
+            alert('Error al registrar garantía: ' + err.message);
+        } finally {
+            setSubmittingWarranty(false);
+        }
+    };
 
     const handleReviewSubmit = async (e) => {
         e.preventDefault();
@@ -117,6 +152,12 @@ export default function RepairDetailPage() {
                 priority: data.priority || 'normal',
                 service_requested: data.service_requested || '',
                 estimated_delivery: data.estimated_delivery ? data.estimated_delivery.split('T')[0] : ''
+            });
+            setInspectionData({
+                physical_condition: data.physical_condition || 5,
+                accessories_received: data.accessories_received || '',
+                existing_damage: data.existing_damage || '',
+                technical_observations: data.technical_observations || ''
             });
             setError(null);
         } catch (err) {
@@ -185,6 +226,21 @@ export default function RepairDetailPage() {
     const handlePrintTicket = async () => {
         try { await generateServiceTicket(repair, settings); } 
         catch (error) { alert('No se pudo generar el ticket. Por favor intenta de nuevo.'); }
+    };
+
+    const handleUpdateInspection = async (e) => {
+        if(e) e.preventDefault();
+        try {
+            setUpdatingStatus(true);
+            await repairService.update(id, inspectionData);
+            setIsEditingInspection(false);
+            await fetchRepairData();
+            alert('Inspección inicial actualizada correctamente.');
+        } catch (err) {
+            alert('Error al actualizar la inspección: ' + err.message);
+        } finally {
+            setUpdatingStatus(false);
+        }
     };
 
     const handleUpdateStatus = async (e) => {
@@ -270,6 +326,15 @@ export default function RepairDetailPage() {
     // Derived values
     const progressPercent = repair ? Math.min(100, Math.max(0, (Object.keys(STATUS_LABELS).indexOf(repair.status) / (Object.keys(STATUS_LABELS).length - 1)) * 100)) : 0;
     const currentStatusColor = repair ? (STATUS_COLORS[repair.status] || '#6b7280') : '#6b7280';
+    const remainingWarranty = (() => {
+        if (!repair || !repair.warranty_expires) return null;
+        const expiry = new Date(repair.warranty_expires);
+        const today = new Date();
+        expiry.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+        const diffTime = expiry - today;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    })();
 
     if (loading) return <div className="loading-state"><div className="spinner"></div><p>Cargando información...</p></div>;
     
@@ -284,6 +349,41 @@ export default function RepairDetailPage() {
     return (
         <div className="repair-detail-page">
             
+            {/* Banners de Vinculación de Garantías */}
+            {repair.parent_repair_id && (
+                <div className="card info-card" style={{ borderLeft: '4px solid var(--color-warning)', background: 'rgba(245, 158, 11, 0.05)', marginBottom: 'var(--sp-4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AlertCircle size={18} className="text-warning" />
+                        <span>
+                            Este equipo ingresó por <strong>Garantía</strong> de la reparación original{' '}
+                            <Link to={`${isAdmin ? '/admin' : '/dashboard'}/reparaciones/${repair.parent_repair_id}`} style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>
+                                #{repair.parent_ticket}
+                            </Link>.
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {repair.child_warranties && repair.child_warranties.length > 0 && (
+                <div className="card info-card" style={{ borderLeft: '4px solid var(--color-error)', background: 'rgba(230, 51, 88, 0.05)', marginBottom: 'var(--sp-4)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <AlertCircle size={18} className="text-primary" />
+                            <strong>Reclamaciones de Garantía registradas para esta orden:</strong>
+                        </div>
+                        <ul style={{ margin: '8px 0 0 24px', padding: 0, fontSize: 'var(--font-sm)' }}>
+                            {repair.child_warranties.map(child => (
+                                <li key={child.id} style={{ marginBottom: '4px' }}>
+                                    <Link to={`${isAdmin ? '/admin' : '/dashboard'}/reparaciones/${child.id}`} style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>
+                                        #{child.ticket_number}
+                                    </Link> — Registrado el {formatDate(child.created_at)} ({STATUS_LABELS[child.status]})
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
+
             {/* ── Page Header & Progress Bar ── */}
             <header className="page-header detail-header">
                 <div className="detail-header-top">
@@ -343,6 +443,7 @@ export default function RepairDetailPage() {
                         </div>
                     </div>
                 )}
+
 
                 {repair.status === 'waiting_approval' && !isAdmin && (
                     <div className="card warning-card">
@@ -530,26 +631,49 @@ export default function RepairDetailPage() {
                     
                     {/* Inspección */}
                     <section className="card">
-                        <div className="card-header"><ClipboardCheck size={18} className="text-primary"/> <h3>Inspección Inicial</h3></div>
+                        <div className="card-header spread">
+                            <div className="flex items-center gap-xs"><ClipboardCheck size={18} className="text-primary"/> <h3>Inspección Inicial</h3></div>
+                            {(isAdmin || user?.role === 'technician') && (
+                                <button onClick={() => setIsEditingInspection(!isEditingInspection)} className="btn btn-ghost btn-sm text-muted">
+                                    {isEditingInspection ? 'Cancelar' : 'Editar'}
+                                </button>
+                            )}
+                        </div>
                         <div className="info-grid mt-sm">
                             <div className="info-item">
                                 <label>Condición Física</label>
-                                <div className="rating-display mt-xs">
-                                    {[1, 2, 3, 4, 5].map(v => <div key={v} className={`rating-dot inline-block w-2 h-2 rounded-full mr-1 ${repair.physical_condition >= v ? 'bg-primary' : 'bg-bg-elevated'}`}></div>)}
-                                    <span className="text-xs text-muted ml-sm">{repair.physical_condition}/5</span>
-                                </div>
+                                {isEditingInspection ? (
+                                    <select className="select select-sm w-full" value={inspectionData.physical_condition} onChange={e => setInspectionData({...inspectionData, physical_condition: Number(e.target.value)})}>
+                                        <option value="1">1/5 (Pésimo)</option>
+                                        <option value="2">2/5 (Malo)</option>
+                                        <option value="3">3/5 (Regular)</option>
+                                        <option value="4">4/5 (Bueno)</option>
+                                        <option value="5">5/5 (Excelente)</option>
+                                    </select>
+                                ) : (
+                                    <div className="rating-display mt-xs">
+                                        {[1, 2, 3, 4, 5].map(v => <div key={v} className={`rating-dot inline-block w-2 h-2 rounded-full mr-1 ${repair.physical_condition >= v ? 'bg-primary' : 'bg-bg-elevated'}`}></div>)}
+                                        <span className="text-xs text-muted ml-sm">{repair.physical_condition}/5</span>
+                                    </div>
+                                )}
                             </div>
                             <div className="info-item">
                                 <label>Accesorios recibidos</label>
-                                <span>{repair.accessories_received || 'Ninguno'}</span>
+                                {isEditingInspection ? (
+                                    <input type="text" className="input input-sm w-full" value={inspectionData.accessories_received} onChange={e => setInspectionData({...inspectionData, accessories_received: e.target.value})} />
+                                ) : <span>{repair.accessories_received || 'Ninguno'}</span>}
                             </div>
                             <div className="info-item col-span-full">
                                 <label>Daños previos</label>
-                                <span className="text-muted">{repair.existing_damage || 'Sin reporte de daños'}</span>
+                                {isEditingInspection ? (
+                                    <textarea className="input text-sm w-full" rows="2" value={inspectionData.existing_damage} onChange={e => setInspectionData({...inspectionData, existing_damage: e.target.value})} />
+                                ) : <span className="text-muted">{repair.existing_damage || 'Sin reporte de daños'}</span>}
                             </div>
                             <div className="info-item col-span-full">
                                 <label>Observaciones del técnico</label>
-                                <span className="text-muted">{repair.technical_observations || 'Ninguna'}</span>
+                                {isEditingInspection ? (
+                                    <textarea className="input text-sm w-full" rows="2" value={inspectionData.technical_observations} onChange={e => setInspectionData({...inspectionData, technical_observations: e.target.value})} />
+                                ) : <span className="text-muted">{repair.technical_observations || 'Ninguna'}</span>}
                             </div>
 
                             {repair.function_checklist && (
@@ -565,6 +689,11 @@ export default function RepairDetailPage() {
                                 </div>
                             )}
                         </div>
+                        {isEditingInspection && (
+                            <div className="flex justify-end mt-md">
+                                <button onClick={handleUpdateInspection} className="btn btn-primary" disabled={updatingStatus}>Guardar Inspección</button>
+                            </div>
+                        )}
                     </section>
 
                     {/* Imágenes */}
@@ -679,6 +808,141 @@ export default function RepairDetailPage() {
                         )}
                     </div>
 
+                    {/* Garantía */}
+                    <div className="card" style={{ borderTop: '3px solid var(--color-success)' }}>
+                        <div className="card-header"><ShieldCheck size={18} className="text-success"/> <h3>Garantía</h3></div>
+                        <div className="mt-sm flex flex-col gap-sm">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted">Días pactados</span>
+                                <strong>{repair.warranty_days || 30} días</strong>
+                            </div>
+                            {repair.warranty_expires && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted">Vence el</span>
+                                    <span>{new Date(repair.warranty_expires).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                </div>
+                            )}
+                            {remainingWarranty !== null && (
+                                <>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted">Días restantes</span>
+                                        <strong className={remainingWarranty > 0 ? 'text-success' : 'text-error'}>
+                                            {remainingWarranty > 0 ? `${remainingWarranty} días` : 'Expirada'}
+                                        </strong>
+                                    </div>
+                                    {/* Barra de progreso de garantía */}
+                                    <div style={{ background: 'var(--color-bg-elevated, #2a2a2a)', borderRadius: '6px', height: '8px', overflow: 'hidden', marginTop: '4px' }}>
+                                        <div style={{
+                                            width: `${Math.max(0, Math.min(100, (remainingWarranty / (repair.warranty_days || 30)) * 100))}%`,
+                                            height: '100%',
+                                            borderRadius: '6px',
+                                            background: remainingWarranty > 7 ? 'var(--color-success, #22c55e)' : remainingWarranty > 0 ? 'var(--color-warning, #f59e0b)' : 'var(--color-error, #ef4444)',
+                                            transition: 'width 0.5s ease'
+                                        }} />
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Enlace al ticket padre */}
+                            {repair.parent_repair_id && (
+                                <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', padding: '10px 12px', marginTop: '4px' }}>
+                                    <span className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <AlertCircle size={14} className="text-warning" />
+                                        Garantía del ticket{' '}
+                                        <Link to={`${isAdmin ? '/admin' : '/dashboard'}/reparaciones/${repair.parent_repair_id}`} style={{ color: 'var(--color-primary)', fontWeight: 700 }}>#{repair.parent_ticket}</Link>
+                                    </span>
+
+                                    <div style={{ borderTop: '1px dashed rgba(245, 158, 11, 0.2)', marginTop: '8px', paddingTop: '8px' }}>
+                                        <span className="text-xs text-muted" style={{ display: 'block', marginBottom: '4px' }}>Resolución de Garantía</span>
+                                        {!(isAdmin || user?.role === 'technician') ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                <span className={`badge text-xs`} style={{
+                                                    alignSelf: 'flex-start',
+                                                    background: repair.warranty_approved === 'approved' ? 'rgba(34,197,94,0.15)' : repair.warranty_approved === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                                                    color: repair.warranty_approved === 'approved' ? '#22c55e' : repair.warranty_approved === 'rejected' ? '#ef4444' : '#f59e0b',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {repair.warranty_approved === 'approved' ? 'Aceptada (Aplica)' :
+                                                     repair.warranty_approved === 'rejected' ? 'Rechazada' : 'Pendiente de Aprobación'}
+                                                </span>
+                                                {repair.warranty_tech_notes && (
+                                                    <p className="text-xs text-muted" style={{ margin: '4px 0 0', fontStyle: 'italic' }}>
+                                                        "Observaciones: {repair.warranty_tech_notes}"
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <select 
+                                                    className="select select-sm w-full"
+                                                    style={{ height: '28px', padding: '0 4px', fontSize: '12px' }}
+                                                    value={repair.warranty_approved || 'pending'}
+                                                    onChange={async (e) => {
+                                                        try {
+                                                            await repairService.update(repair.id, { warranty_approved: e.target.value });
+                                                            await fetchRepairData();
+                                                            alert('Aprobación de garantía actualizada.');
+                                                        } catch (err) {
+                                                            alert('Error al actualizar: ' + err.message);
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="pending">Pendiente de Aprobación</option>
+                                                    <option value="approved">Aceptar (Aplica Garantía)</option>
+                                                    <option value="rejected">Rechazar Garantía</option>
+                                                </select>
+                                                <div>
+                                                    <span className="text-xs text-muted" style={{ display: 'block', marginBottom: '2px' }}>Notas Técnicas de Garantía</span>
+                                                    <textarea
+                                                        className="input text-xs w-full"
+                                                        style={{ padding: '6px', minHeight: '40px', resize: 'vertical' }}
+                                                        placeholder="Describe qué se le va a hacer o por qué no aplica..."
+                                                        defaultValue={repair.warranty_tech_notes || ''}
+                                                        onBlur={async (e) => {
+                                                            if (e.target.value !== (repair.warranty_tech_notes || '')) {
+                                                                try {
+                                                                    await repairService.update(repair.id, { warranty_tech_notes: e.target.value });
+                                                                    await fetchRepairData();
+                                                                } catch (err) {
+                                                                    alert('Error al guardar notas: ' + err.message);
+                                                                }
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Reclamaciones hijas */}
+                            {repair.child_warranties && repair.child_warranties.length > 0 && (
+                                <div style={{ background: 'rgba(99, 102, 241, 0.08)', borderRadius: '8px', padding: '10px 12px', marginTop: '4px' }}>
+                                    <span className="text-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>Reclamaciones registradas:</span>
+                                    {repair.child_warranties.map(child => (
+                                        <div key={child.id} className="text-sm" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                            <Link to={`${isAdmin ? '/admin' : '/dashboard'}/reparaciones/${child.id}`} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>#{child.ticket_number}</Link>
+                                            <span className={`badge text-xs status-${child.status}`} style={{ fontSize: '10px' }}>{STATUS_LABELS[child.status]}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Botón de reclamación */}
+                            {repair.status === 'delivered' && (isAdmin || user?.role === 'client') && (
+                                <button type="button" className="btn btn-primary w-full mt-sm" onClick={() => setShowWarrantyModal(true)}
+                                    style={{ background: remainingWarranty > 0 ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'var(--color-bg-elevated)', boxShadow: remainingWarranty > 0 ? '0 4px 12px rgba(34,197,94,0.3)' : 'none', color: remainingWarranty > 0 ? '#fff' : 'var(--color-text-muted)' }}
+                                >
+                                    <Wrench size={16} />
+                                    {isAdmin ? 'Registrar Ingreso por Garantía' : 'Solicitar Garantía'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Cliente */}
                     {isAdmin && (
                         <div className="card">
@@ -712,6 +976,87 @@ export default function RepairDetailPage() {
 
             <SignatureModal isOpen={showSigModal} onClose={() => setShowSigModal(false)} onSave={handleSignatureSave} title={sigType === 'approval' ? 'Aprobar Cotización' : 'Confirmar Entrega'} description="..." />
             <PrintReceipt isOpen={showPrintReceipt} onClose={() => setShowPrintReceipt(false)} data={receiptData || repair} type={receiptType} settings={settings} />
+
+            {showWarrantyModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.75)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', zIndex: 10000
+                }} onClick={() => setShowWarrantyModal(false)}>
+                    <div className="card" onClick={(e) => e.stopPropagation()} style={{
+                        background: 'var(--color-bg-card, #1a1a1a)',
+                        padding: '2rem', borderRadius: '12px',
+                        width: '90%', maxWidth: '500px',
+                        border: '1px solid var(--color-border, #333)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                        color: 'var(--color-text, #fff)'
+                    }}>
+                        <div className="card-header spread" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border, #333)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>{isAdmin ? 'Registrar Reingreso por Garantía' : 'Solicitar Aplicación de Garantía'}</h3>
+                            <button className="btn btn-ghost btn-sm btn-icon" type="button" onClick={() => setShowWarrantyModal(false)} style={{ color: 'var(--color-text-muted)' }}><X size={18} /></button>
+                        </div>
+                        <form onSubmit={handleClaimWarrantySubmit}>
+                            <p className="text-muted text-sm" style={{ marginBottom: '1.5rem', color: 'var(--color-text-muted)' }}>
+                                {isAdmin 
+                                    ? `Se generará una nueva orden de servicio con costo $0, vinculada a este ticket #${repair.ticket_number}.`
+                                    : `Se enviará una solicitud para ingresar tu dispositivo bajo la garantía del ticket #${repair.ticket_number}.`}
+                            </p>
+                            <div className="input-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Falla o Síntoma Reportado *</label>
+                                <textarea 
+                                    className="input" 
+                                    rows="3" 
+                                    placeholder={isAdmin ? "Ej. La pantalla no da imagen o presenta parpadeo..." : "Describe detalladamente la falla que presenta tu equipo actualmente..."}
+                                    value={warrantyProblem} 
+                                    onChange={e => setWarrantyProblem(e.target.value)} 
+                                    required 
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border, #444)', background: 'var(--color-bg-input, #222)', color: 'var(--color-text, #fff)' }}
+                                />
+                            </div>
+                            
+                            {isAdmin && (
+                                <>
+                                    <div className="input-group" style={{ marginBottom: '1.25rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Prioridad</label>
+                                        <select className="select" value={warrantyPriority} onChange={e => setWarrantyPriority(e.target.value)} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border, #444)', background: 'var(--color-bg-input, #222)', color: 'var(--color-text, #fff)' }}>
+                                            <option value="normal">Normal</option>
+                                            <option value="urgent">Urgente</option>
+                                        </select>
+                                    </div>
+                                    <div className="input-group" style={{ marginBottom: '1.25rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Fecha de Entrega Estimada</label>
+                                        <input 
+                                            type="date" 
+                                            className="input" 
+                                            value={warrantyDeliveryDate} 
+                                            onChange={e => setWarrantyDeliveryDate(e.target.value)} 
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border, #444)', background: 'var(--color-bg-input, #222)', color: 'var(--color-text, #fff)' }}
+                                        />
+                                    </div>
+                                    <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Observaciones del Técnico (Opcional)</label>
+                                        <textarea 
+                                            className="input" 
+                                            rows="2" 
+                                            placeholder="Detalles sobre el estado actual del dispositivo..." 
+                                            value={warrantyObservations} 
+                                            onChange={e => setWarrantyObservations(e.target.value)} 
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border, #444)', background: 'var(--color-bg-input, #222)', color: 'var(--color-text, #fff)' }}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            
+                            <div className="flex gap-md justify-end" style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowWarrantyModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" disabled={submittingWarranty || !warrantyProblem.trim()}>
+                                    {submittingWarranty ? 'Registrando...' : (isAdmin ? 'Registrar Reingreso' : 'Enviar Solicitud')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

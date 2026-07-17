@@ -265,6 +265,21 @@ function TrackRepairPage() {
                                     </div>
                                 </div>
 
+                                {/* Banner de garantía si es ingreso por garantía */}
+                                {repair.parent_repair_id && (
+                                    <div className="card mb-md" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,163,74,0.05))', borderLeft: '4px solid #22c55e', padding: '14px 18px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <Shield size={20} style={{ color: '#22c55e' }} />
+                                            <div>
+                                                <p style={{ margin: 0, fontWeight: 700, color: '#22c55e', fontSize: '14px' }}>Ingreso por Garantía</p>
+                                                <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--color-text-muted, #999)' }}>
+                                                    Este servicio está cubierto por la garantía del ticket original <strong style={{ color: 'var(--color-text, #fff)' }}>#{repair.parent_ticket_number}</strong> — sin costo adicional.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Timeline */}
                                 <div className="card mb-md">
                                     <div className="flex justify-between items-center mb-md flex-col-mobile">
@@ -384,6 +399,12 @@ function TrackRepairPage() {
                                                 <span className="info-label text-muted">Días de Garantía</span>
                                                 <span className="info-value">{repair.warranty_days || 30} días</span>
                                             </div>
+                                            {repair.warranty_expires && (
+                                                <div className="info-item">
+                                                    <span className="info-label text-muted">Vence el</span>
+                                                    <span className="info-value font-bold">{new Date(repair.warranty_expires).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                                </div>
+                                            )}
                                             {remainingWarranty !== null && (
                                                 <div className="info-item">
                                                     <span className="info-label text-muted">Garantía Restante</span>

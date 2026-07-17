@@ -116,6 +116,38 @@ async function dbInit() {
             console.log(`[DB-INIT] Columna payment_status añadida a repairs.`);
         }
 
+        // 8.6. Verificar y agregar columna parent_repair_id a repairs si no existe
+        console.log(`[DB-INIT] Verificando columna "parent_repair_id" en tabla "repairs"...`);
+        const [parentRepairCol] = await connection.query(`SHOW COLUMNS FROM repairs LIKE 'parent_repair_id'`);
+        if (parentRepairCol.length === 0) {
+            await connection.query(`ALTER TABLE repairs ADD COLUMN parent_repair_id INT NULL, ADD CONSTRAINT fk_parent_repair FOREIGN KEY (parent_repair_id) REFERENCES repairs(id) ON DELETE SET NULL`);
+            console.log(`[DB-INIT] Columna parent_repair_id añadida a repairs.`);
+        }
+
+        // 8.7. Verificar y agregar columna technical_observations a repairs si no existe
+        console.log(`[DB-INIT] Verificando columna "technical_observations" en tabla "repairs"...`);
+        const [techObsCol] = await connection.query(`SHOW COLUMNS FROM repairs LIKE 'technical_observations'`);
+        if (techObsCol.length === 0) {
+            await connection.query(`ALTER TABLE repairs ADD COLUMN technical_observations TEXT NULL`);
+            console.log(`[DB-INIT] Columna technical_observations añadida a repairs.`);
+        }
+
+        // 8.8. Verificar y agregar columna warranty_approved a repairs si no existe
+        console.log(`[DB-INIT] Verificando columna "warranty_approved" en tabla "repairs"...`);
+        const [warrantyApprovedCol] = await connection.query(`SHOW COLUMNS FROM repairs LIKE 'warranty_approved'`);
+        if (warrantyApprovedCol.length === 0) {
+            await connection.query(`ALTER TABLE repairs ADD COLUMN warranty_approved VARCHAR(20) DEFAULT 'pending'`);
+            console.log(`[DB-INIT] Columna warranty_approved añadida a repairs.`);
+        }
+
+        // 8.9. Verificar y agregar columna warranty_tech_notes a repairs si no existe
+        console.log(`[DB-INIT] Verificando columna "warranty_tech_notes" en tabla "repairs"...`);
+        const [warrantyTechNotesCol] = await connection.query(`SHOW COLUMNS FROM repairs LIKE 'warranty_tech_notes'`);
+        if (warrantyTechNotesCol.length === 0) {
+            await connection.query(`ALTER TABLE repairs ADD COLUMN warranty_tech_notes TEXT NULL`);
+            console.log(`[DB-INIT] Columna warranty_tech_notes añadida a repairs.`);
+        }
+
         // 9. Modificar tipo de setting_value a LONGTEXT para soportar logos pesados en base64
         console.log(`[DB-INIT] Asegurando que la columna "setting_value" en tabla "settings" soporte datos largos (LONGTEXT)...`);
         await connection.query(`ALTER TABLE settings MODIFY COLUMN setting_value LONGTEXT`);

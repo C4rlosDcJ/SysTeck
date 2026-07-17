@@ -100,6 +100,11 @@ export const repairService = {
         body: JSON.stringify({ rating, review_text: reviewText })
     }),
 
+    claimWarranty: (id, data) => fetchAPI(`/repairs/${id}/claim-warranty`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+
     delete: (id) => fetchAPI(`/repairs/${id}`, { method: 'DELETE' })
 };
 

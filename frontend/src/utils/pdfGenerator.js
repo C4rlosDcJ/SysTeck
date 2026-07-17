@@ -145,10 +145,18 @@ export const generateServiceTicket = async (repair, settings = {}) => {
         ['Servicio Solicitado:', repair.service_name || repair.service_requested || 'General'],
         ['Falla Reportada:', repair.problem_description || 'N/A'],
         ['Garantía Pactada:', `${repair.warranty_days || settings.default_warranty_days || 30} días`],
+    ];
+    if (repair.warranty_expires) {
+        receptionDetails.push(['Vencimiento de Garantía:', new Date(repair.warranty_expires).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })]);
+    }
+    if (repair.parent_repair_id) {
+        receptionDetails.push(['INGRESO POR GARANTÍA:', `Ticket Original: ${repair.parent_ticket || '#' + repair.parent_repair_id}`]);
+    }
+    receptionDetails.push(
         ['Daños Previos:', repair.existing_damage || 'Ninguno reportado'],
         ['Accesorios Recibidos:', repair.accessories_received || 'Ninguno'],
         ['Inspección Checklist:', checklistStr]
-    ];
+    );
 
     autoTable(doc, {
         startY: currentY + 2,

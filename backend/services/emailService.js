@@ -132,7 +132,35 @@ const emailTemplates = {
         <p style="color: #888; font-size: 12px; margin-top: 30px;">Este es un correo automático de ${businessName}, por favor no responder.</p>
       </div>
     `
-  })
+  }),
+
+  warrantyResolved: (repair, customer, statusApproved, businessName) => {
+    const isApproved = statusApproved === 'approved';
+    const statusText = isApproved ? 'APROBADA' : 'RECHAZADA';
+    const statusColor = isApproved ? '#4CAF50' : '#DA0037';
+    return {
+      subject: `${businessName} - Resolución de Garantía para el Ticket #${repair.ticket_number} - ${statusText}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #171717; color: #EDEDED; padding: 20px; border-radius: 10px;">
+          <h1 style="color: #DA0037; text-align: center;">${businessName}</h1>
+          <h2>Hola ${customer.first_name},</h2>
+          <p>Hemos revisado tu solicitud de garantía para la reparación del dispositivo <strong>${repair.model || 'Equipo'}</strong>.</p>
+          
+          <div style="background: #444444; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Número de ticket de garantía:</strong> ${repair.ticket_number}</p>
+            <p><strong>Resolución de Garantía:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
+            ${repair.warranty_tech_notes ? `<p><strong>Observaciones técnicas:</strong> ${repair.warranty_tech_notes}</p>` : ''}
+          </div>
+
+          ${isApproved 
+            ? '<p>Nuestros técnicos ya están trabajando en tu equipo bajo cobertura de garantía. Te avisaremos en cuanto esté listo para entrega.</p>' 
+            : '<p>Lamentablemente, el reporte técnico indica que la falla no cumple con las condiciones de cobertura de garantía. Si tienes dudas, puedes responder a este correo o contactarnos directamente.</p>'
+          }
+          <p style="color: #888; font-size: 12px; margin-top: 30px;">Este es un correo automático de ${businessName}, por favor no responder.</p>
+        </div>
+      `
+    };
+  }
 };
 
 // Mapeo de estados

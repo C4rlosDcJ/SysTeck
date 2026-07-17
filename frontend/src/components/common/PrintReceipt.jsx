@@ -102,6 +102,11 @@ export default function PrintReceipt({ isOpen, onClose, data, type = 'repair', s
                                         <span className="bold-badge priority-badge">PRIORIDAD: {translatePriority(data.priority)}</span>
                                     )}
                                 </div>
+                                {data.parent_repair_id && (
+                                    <p className="bold" style={{ textAlign: 'center', marginTop: '6px', fontSize: '11px', border: '1px solid #000', padding: '4px', background: '#f0f0f0' }}>
+                                        INGRESO POR GARANTÍA — Ticket Original: {data.parent_ticket || `#${data.parent_repair_id}`}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="divider-double"></div>
@@ -135,6 +140,9 @@ export default function PrintReceipt({ isOpen, onClose, data, type = 'repair', s
                                 )}
                                 {data.physical_condition && <p><span>Estado Estético:</span> <span>{data.physical_condition}/5</span></p>}
                                 <p><span>Garantía Aplicable:</span> <span className="bold">{data.warranty_days || settings.default_warranty_days || 30} días</span></p>
+                                {data.warranty_expires && (
+                                    <p><span>Vence el:</span> <span className="bold">{new Date(data.warranty_expires).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
+                                )}
                                 {data.accessories_received && <p><span>Accesorios:</span> <span className="bold">{data.accessories_received}</span></p>}
                             </div>
 

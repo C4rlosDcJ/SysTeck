@@ -19,12 +19,14 @@ export default function AdminRepairs() {
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
 
+    const [warrantyFilter, setWarrantyFilter] = useState('all');
+
     const LIMIT = 20;
 
     useEffect(() => {
         fetchRepairs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [statusFilter, page]);
+    }, [statusFilter, warrantyFilter, page]);
 
     // Debounce search
     useEffect(() => {
@@ -39,6 +41,12 @@ export default function AdminRepairs() {
             const params = { limit: LIMIT, page };
             if (statusFilter !== 'all') params.status = statusFilter;
             if (searchTerm.trim()) params.search = searchTerm.trim();
+            if (warrantyFilter === 'warranties') {
+                params.is_warranty = 'true';
+            } else if (warrantyFilter === 'pending_warranties') {
+                params.is_warranty = 'true';
+                params.warranty_approved = 'pending';
+            }
             const data = await repairService.getAll(params);
             setRepairs(data.repairs || []);
             setTotal(data.total || 0);
@@ -96,8 +104,8 @@ export default function AdminRepairs() {
             </div>
 
             {/* ── Search bar ── */}
-            <div className="repairs-search">
-                <div className="search-box">
+            <div className="repairs-search" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="search-box" style={{ flex: 1, minWidth: '250px' }}>
                     <Search size={16} className="search-icon" />
                     <input
                         type="text"
@@ -106,6 +114,18 @@ export default function AdminRepairs() {
                         onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
                         className="input"
                     />
+                </div>
+                <div className="filter-select-wrapper" style={{ minWidth: '220px' }}>
+                    <select
+                        className="select"
+                        value={warrantyFilter}
+                        onChange={e => { setWarrantyFilter(e.target.value); setPage(1); }}
+                        style={{ height: '42px', padding: '0 12px', fontSize: '14px', borderRadius: 'var(--radius-md)' }}
+                    >
+                        <option value="all">Todas las órdenes</option>
+                        <option value="warranties">Sólo Garantías</option>
+                        <option value="pending_warranties">Garantías por Aprobar</option>
+                    </select>
                 </div>
             </div>
 
@@ -145,6 +165,9 @@ export default function AdminRepairs() {
                                     <tr key={repair.id}>
                                         <td>
                                             <span className="repairs-ticket">{repair.ticket_number}</span>
+                                            {repair.parent_repair_id && (
+                                                <span className="badge text-xs" style={{ marginLeft: '6px', background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontSize: '9px', padding: '2px 6px', borderRadius: '4px' }}>🛡 Garantía</span>
+                                            )}
                                         </td>
                                         <td>
                                             <div className="repairs-client">

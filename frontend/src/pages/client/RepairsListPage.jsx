@@ -126,7 +126,15 @@ export default function RepairsListPage() {
                             return (
                                 <div key={repair.id} className="repair-grid-card">
                                     <div className="card-top-header">
-                                        <span className="ticket-tag">{repair.ticket_number}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span className="ticket-tag">{repair.ticket_number}</span>
+                                            {repair.parent_repair_id && (
+                                                <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontSize: '9px', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>🛡 Garantía</span>
+                                            )}
+                                            {repair.status === 'delivered' && repair.warranty_expires && new Date(repair.warranty_expires) > new Date() && (
+                                                <span style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a', fontSize: '9px', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>✓ Garantía Vigente</span>
+                                            )}
+                                        </div>
                                         <span className={`status-badge status-${repair.status}`}>
                                             {statusLabels[repair.status]}
                                         </span>

@@ -55,6 +55,18 @@ exports.getAll = async (req, res) => {
             query += ' AND r.technician_id = ?';
             params.push(technician_id);
         }
+        if (req.query.is_warranty === 'true') {
+            query += ' AND r.parent_repair_id IS NOT NULL';
+        }
+        if (req.query.warranty_approved) {
+            query += ' AND r.warranty_approved = ?';
+            params.push(req.query.warranty_approved);
+        }
+        if (req.query.search) {
+            const searchPattern = `%${req.query.search}%`;
+            query += ' AND (r.ticket_number LIKE ? OR r.model LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)';
+            params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+        }
 
         query += ' ORDER BY r.created_at DESC LIMIT ? OFFSET ?';
         params.push(parseInt(limit), parseInt(offset));
@@ -62,16 +74,38 @@ exports.getAll = async (req, res) => {
         const [repairs] = await db.query(query, params);
 
         // Contar total
-        let countQuery = 'SELECT COUNT(*) as total FROM repairs WHERE 1=1';
+        let countQuery = 'SELECT COUNT(*) as total FROM repairs r';
+        
+        // Agregar JOIN si buscamos por nombre de cliente
+        if (req.query.search) {
+            countQuery += ' LEFT JOIN users u ON r.customer_id = u.id';
+        }
+        
+        countQuery += ' WHERE 1=1';
         const countParams = [];
 
         if (req.user.role === 'client') {
-            countQuery += ' AND customer_id = ?';
+            countQuery += ' AND r.customer_id = ?';
+            countParams.push(req.user.id);
+        } else if (req.user.role === 'technician') {
+            countQuery += ' AND r.technician_id = ?';
             countParams.push(req.user.id);
         }
         if (status) {
-            countQuery += ' AND status = ?';
+            countQuery += ' AND r.status = ?';
             countParams.push(status);
+        }
+        if (req.query.is_warranty === 'true') {
+            countQuery += ' AND r.parent_repair_id IS NOT NULL';
+        }
+        if (req.query.warranty_approved) {
+            countQuery += ' AND r.warranty_approved = ?';
+            countParams.push(req.query.warranty_approved);
+        }
+        if (req.query.search) {
+            const searchPattern = `%${req.query.search}%`;
+            countQuery += ' AND (r.ticket_number LIKE ? OR r.model LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)';
+            countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
 
         const [countResult] = await db.query(countQuery, countParams);
@@ -147,8 +181,22 @@ exports.getById = async (req, res) => {
 
         const [notes] = await db.query(notesQuery, [id]);
 
+        // Obtener ticket de reparación padre si existe
+        let parentTicket = null;
+        if (repair.parent_repair_id) {
+            const [parent] = await db.query('SELECT ticket_number FROM repairs WHERE id = ?', [repair.parent_repair_id]);
+            if (parent.length > 0) {
+                parentTicket = parent[0].ticket_number;
+            }
+        }
+
+        // Obtener reclamaciones de garantía hijas si existen
+        const [children] = await db.query('SELECT id, ticket_number, created_at, status FROM repairs WHERE parent_repair_id = ? ORDER BY created_at DESC', [id]);
+
         res.json({
             ...repair,
+            parent_ticket: parentTicket,
+            child_warranties: children,
             images,
             history,
             notes
@@ -306,7 +354,8 @@ exports.update = async (req, res) => {
             'existing_damage', 'function_checklist', 'problem_description', 'service_requested',
             'service_id', 'priority', 'estimated_delivery', 'diagnosis_cost', 'labor_cost',
             'parts_cost', 'discount', 'status', 'total_cost', 'advance_payment', 'warranty_days',
-            'warranty_expires', 'battery_health', 'screen_status', 'account_status', 'technical_observations'
+            'warranty_expires', 'battery_health', 'screen_status', 'account_status', 'technical_observations',
+            'warranty_approved', 'warranty_tech_notes'
         ];
 
         const setClauses = [];
@@ -331,6 +380,35 @@ exports.update = async (req, res) => {
 
         values.push(id);
         await db.query(`UPDATE repairs SET ${setClauses.join(', ')} WHERE id = ?`, values);
+
+        // Notificar al cliente y loggear en historial si cambia la aprobación de garantía
+        if (updates.warranty_approved && updates.warranty_approved !== existing[0].warranty_approved) {
+            const [customer] = await db.query('SELECT email, first_name FROM users WHERE id = ?', [existing[0].customer_id]);
+            const statusText = updates.warranty_approved === 'approved' ? 'Aprobada' : updates.warranty_approved === 'rejected' ? 'Rechazada' : 'Pendiente';
+            
+            // 1. Registrar en historial de estados de la reparación
+            await db.query(
+                'INSERT INTO repair_status_history (repair_id, status, notes, changed_by) VALUES (?, ?, ?, ?)',
+                [id, existing[0].status, `Garantía marcada como: ${statusText}. Nota: ${updates.warranty_tech_notes || 'Sin observaciones'}`, req.user.id]
+            );
+
+            // 2. Enviar correo al cliente
+            if (customer.length > 0 && customer[0].email) {
+                try {
+                    await sendEmail(customer[0].email, 'warrantyResolved', {
+                        repair: {
+                            ticket_number: existing[0].ticket_number,
+                            model: existing[0].model,
+                            warranty_tech_notes: updates.warranty_tech_notes || updates.warranty_tech_notes === '' ? updates.warranty_tech_notes : existing[0].warranty_tech_notes
+                        },
+                        customer: customer[0],
+                        newStatus: updates.warranty_approved // se pasa como statusApproved a la función
+                    });
+                } catch (emailErr) {
+                    console.error('[REPAIRS] Error al enviar email de resolución de garantía:', emailErr.message);
+                }
+            }
+        }
 
         // Notificar cambio de fecha de entrega si cambió
         if (updates.estimated_delivery && updates.estimated_delivery !== existing[0].estimated_delivery) {
@@ -557,5 +635,152 @@ exports.addReview = async (req, res) => {
     } catch (error) {
         console.error('[REPAIRS] Error al agregar reseña:', error);
         res.status(500).json({ message: 'Error al agregar reseña.' });
+    }
+};
+
+// Procesar un ingreso por garantía
+exports.claimWarranty = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { problem_description, priority, estimated_delivery, technical_observations } = req.body;
+
+        // 1. Obtener reparación original
+        const [repairs] = await db.query('SELECT * FROM repairs WHERE id = ?', [id]);
+        if (repairs.length === 0) {
+            return res.status(404).json({ message: 'Reparación original no encontrada.' });
+        }
+
+        const original = repairs[0];
+
+        // Validar permisos si el usuario es cliente (debe ser el propietario)
+        if (req.user.role === 'client' && original.customer_id !== req.user.id) {
+            return res.status(403).json({ message: 'No tienes permiso para reclamar garantía de esta reparación.' });
+        }
+
+        // 2. Verificar que el estado es 'delivered'
+        if (original.status !== 'delivered') {
+            return res.status(400).json({ message: 'Solo se puede procesar garantía para equipos ya entregados.' });
+        }
+
+        // 3. Verificar que la garantía no haya expirado
+        if (original.warranty_expires) {
+            const expiryDate = new Date(original.warranty_expires);
+            expiryDate.setHours(23, 59, 59, 999);
+            if (new Date() > expiryDate) {
+                const expiredDate = expiryDate.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+                return res.status(400).json({ 
+                    message: `La garantía de esta reparación expiró el ${expiredDate}. No es posible registrar un ingreso por garantía.` 
+                });
+            }
+        }
+
+        // 4. Generar nuevo ticket
+        const ticketNumber = generateTicketNumber();
+
+        // 5. Copiar datos y crear nuevo registro
+        const [result] = await db.query(`
+            INSERT INTO repairs (
+                ticket_number, customer_id, device_type_id, brand_id, brand_other, model, color,
+                storage_capacity, serial_number, imei, device_password, accessories_received,
+                physical_condition, existing_damage, problem_description, service_requested,
+                service_id, priority, estimated_delivery, diagnosis_cost, labor_cost, parts_cost,
+                discount, total_cost, advance_payment, warranty_days, status, payment_status,
+                parent_repair_id, technical_observations, warranty_approved, warranty_tech_notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, ?, 'received', 'paid', ?, ?, 'pending', null)
+        `, [
+            ticketNumber,
+            original.customer_id,
+            original.device_type_id,
+            original.brand_id,
+            original.brand_other,
+            original.model,
+            original.color,
+            original.storage_capacity,
+            original.serial_number,
+            original.imei,
+            original.device_password,
+            original.accessories_received,
+            original.physical_condition,
+            original.existing_damage,
+            `[GARANTÍA] ${problem_description}`,
+            `Garantía de: ${original.service_requested || 'Reparación General'}`,
+            original.service_id,
+            priority || 'normal',
+            estimated_delivery || null,
+            original.warranty_days || 30,
+            original.id,
+            technical_observations || null
+        ]);
+
+        // Registrar en historial de la nueva reparación
+        await db.query(
+            'INSERT INTO repair_status_history (repair_id, status, notes, changed_by) VALUES (?, "received", ?, ?)',
+            [result.insertId, `Ingreso por garantía vinculado al ticket original ${original.ticket_number}`, req.user.id]
+        );
+
+        // Registrar nota en la reparación original
+        await db.query(
+            'INSERT INTO repair_notes (repair_id, user_id, note, is_internal) VALUES (?, ?, ?, TRUE)',
+            [original.id, req.user.id, `Se registró un ingreso por garantía con el ticket ${ticketNumber}`, true]
+        );
+
+        // Enviar email de notificación al cliente
+        try {
+            const [customers] = await db.query('SELECT first_name, email FROM users WHERE id = ?', [original.customer_id]);
+            if (customers.length > 0 && customers[0].email) {
+                await sendEmail(customers[0].email, 'repairCreated', {
+                    repair: { ticket_number: ticketNumber, model: original.model, problem_description: `[GARANTÍA] ${problem_description}` },
+                    customer: customers[0]
+                });
+            }
+        } catch (emailErr) {
+            console.error('[REPAIRS] Error al enviar email de garantía al cliente (no crítico):', emailErr.message);
+        }
+
+        // Notificar al técnico original y a los administradores
+        try {
+            const emailsToNotify = [];
+
+            // 1. Obtener email del técnico original
+            if (original.technician_id) {
+                const [techs] = await db.query('SELECT email FROM users WHERE id = ? AND role = "technician"', [original.technician_id]);
+                if (techs.length > 0 && techs[0].email) {
+                    emailsToNotify.push(techs[0].email);
+                }
+            }
+
+            // 2. Obtener emails de los administradores
+            const [admins] = await db.query('SELECT email FROM users WHERE role = "admin"');
+            admins.forEach(admin => {
+                if (admin.email && !emailsToNotify.includes(admin.email)) {
+                    emailsToNotify.push(admin.email);
+                }
+            });
+
+            // Enviar correo a cada uno informando la garantía pendiente
+            for (const email of emailsToNotify) {
+                await sendEmail(email, 'repairCreated', {
+                    repair: {
+                        ticket_number: ticketNumber,
+                        model: `${original.model} (RECLAMO DE GARANTÍA PENDIENTE)`,
+                        problem_description: `Se ha reportado un reclamo de garantía para el ticket original ${original.ticket_number}. Falla reportada: ${problem_description}`
+                    },
+                    customer: { first_name: 'Equipo de Soporte' }
+                });
+            }
+        } catch (notifErr) {
+            console.error('[REPAIRS] Error al enviar email de notificación a técnicos/admins:', notifErr.message);
+        }
+
+        res.status(201).json({
+            message: 'Ingreso por garantía registrado exitosamente.',
+            repair: {
+                id: result.insertId,
+                ticket_number: ticketNumber
+            }
+        });
+    } catch (error) {
+        console.error('[REPAIRS] Error al reclamar garantía:', error);
+        res.status(500).json({ message: 'Error al procesar ingreso por garantía.' });
     }
 };
