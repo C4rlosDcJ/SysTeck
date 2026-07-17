@@ -18,6 +18,42 @@
         height: auto;
         overflow: auto;
     }
+    
+    .pos-search-row {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: var(--sp-3) !important;
+    }
+
+    .pos-search-row .search-box {
+        width: 100%;
+    }
+
+    .pos-mode-toggle {
+        width: 100%;
+        display: flex !important;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        background: var(--color-bg-input);
+    }
+
+    .pos-mode-toggle button {
+        flex: 1 0 auto !important;
+        width: auto !important;
+        justify-content: center;
+        padding: var(--sp-2) var(--sp-4) !important;
+        border: none !important;
+        border-right: 1px solid var(--color-border) !important;
+        border-radius: 0 !important;
+    }
+
+    .pos-mode-toggle button:last-child {
+        border-right: none !important;
+    }
 }
 
 /* ─── Left Panel: Catalog ─── */
