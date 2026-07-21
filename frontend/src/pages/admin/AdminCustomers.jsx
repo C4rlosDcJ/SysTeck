@@ -26,6 +26,16 @@ export default function AdminCustomers() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
+    // Local Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth > 900 ? 12 : 6);
+
+    useEffect(() => {
+        const handleResize = () => setItemsPerPage(window.innerWidth > 900 ? 12 : 6);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Advanced Filtering and Sorting States
     const [sortBy, setSortBy] = useState('recent'); // 'recent', 'repairs_desc', 'name_asc'
     const [filterActive, setFilterActive] = useState('all'); // 'all', 'active', 'inactive'
@@ -168,6 +178,14 @@ export default function AdminCustomers() {
             return new Date(b.created_at) - new Date(a.created_at);
         });
 
+    const localTotalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+    const paginatedCustomers = filteredCustomers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Reset local page on search/filter
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterActive, sortBy]);
+
     return (
         <div className="admin-customers-container">
             <header className="page-header">
@@ -252,7 +270,7 @@ export default function AdminCustomers() {
                 ) : (
                     <>
                         <div className="customers-grid">
-                            {filteredCustomers.map((customer) => (
+                            {paginatedCustomers.map(customer => (
                                 <div key={customer.id} className="customer-card">
                                     <div className="customer-card-header">
                                         <div className="admin-customer-avatar">
@@ -310,22 +328,22 @@ export default function AdminCustomers() {
                         </div>
 
                         {/* Paginación */}
-                        {totalPages > 1 && (
-                            <div className="pagination">
+                        {localTotalPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--sp-4)', marginTop: 'var(--sp-6)', marginBottom: 'var(--sp-4)' }}>
                                 <button
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className="btn btn-ghost btn-sm"
+                                    className="btn btn-secondary"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
                                 >
                                     Anterior
                                 </button>
-                                <span className="page-info">
-                                    Página {page} de {totalPages}
+                                <span style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                                    Página {currentPage} de {localTotalPages}
                                 </span>
                                 <button
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className="btn btn-ghost btn-sm"
+                                    className="btn btn-secondary"
+                                    onClick={() => setCurrentPage(p => Math.min(localTotalPages, p + 1))}
+                                    disabled={currentPage === localTotalPages}
                                 >
                                     Siguiente
                                 </button>

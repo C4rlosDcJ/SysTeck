@@ -217,47 +217,85 @@
     .repairs-table .repairs-date { display: none; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .repairs-page { padding: var(--sp-4); }
     .status-chips { gap: var(--sp-1); padding: var(--sp-1); }
     .chip { font-size: 10px; padding: var(--sp-1) var(--sp-2); }
     
-    /* Convert table to card list */
+    /* Convert table to compact premium card list */
     .table-container { background: transparent; border: none; box-shadow: none; overflow: visible; }
     .repairs-table thead { display: none; }
-    .repairs-table, .repairs-table tbody, .repairs-table tr, .repairs-table td { display: block; width: 100%; }
+    
+    .repairs-table, .repairs-table tbody {
+        display: block; width: 100%;
+    }
     
     .repairs-table tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: var(--sp-2) var(--sp-3);
+        margin-bottom: var(--sp-4);
+        padding: var(--sp-4);
         background: var(--color-bg-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-xl);
-        margin-bottom: var(--sp-4);
-        padding: var(--sp-4);
-        position: relative;
         box-shadow: var(--shadow-sm);
-    }
-    
-    .repairs-table td {
-        border-bottom: none;
-        padding: var(--sp-2) 0;
-    }
-    
-    .repairs-table td:first-child {
-        padding-top: 0;
-        margin-bottom: var(--sp-2);
-        display: flex;
-        justify-content: space-between;
         align-items: center;
     }
     
-    .repairs-table td:last-child {
-        padding-bottom: 0;
-        margin-top: var(--sp-3);
-        border-top: 1px solid var(--color-border);
+    .repairs-table td {
         display: flex;
-        justify-content: flex-end;
+        padding: 0;
+        border: none;
+        align-items: center;
     }
     
+    .repairs-table td::before {
+        display: none; /* Ignore data-labels for this compact view */
+    }
+
+    /* 1: Ticket */
+    .repairs-table td:nth-child(1) { grid-column: 1; grid-row: 1; }
+    
+    /* 4: Status */
+    .repairs-table td:nth-child(4) { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+    
+    /* 2: Client */
+    .repairs-table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; margin-top: var(--sp-1); }
+    
+    /* 3: Device */
+    .repairs-table td:nth-child(3) { 
+        grid-column: 1 / -1; 
+        grid-row: 3; 
+        background: rgba(255, 255, 255, 0.02); 
+        padding: var(--sp-3); 
+        border-radius: var(--radius-md); 
+        margin-top: var(--sp-1); 
+        margin-bottom: var(--sp-1); 
+        border: 1px solid rgba(255, 255, 255, 0.04); 
+    }
+    
+    /* 5: Pago */
+    .repairs-table td:nth-child(5) { grid-column: 1; grid-row: 4; }
+    
+    /* 6: Total */
+    .repairs-table td:nth-child(6) { 
+        grid-column: 2; 
+        grid-row: 4; 
+        justify-content: flex-end; 
+        font-size: 1.15em; 
+        font-weight: 800; 
+        color: var(--color-text); 
+    }
+    
+    /* 7: Date */
+    .repairs-table td:nth-child(7) { grid-column: 1; grid-row: 5; font-size: 11px; color: var(--color-text-secondary); }
+    
+    /* 8: Actions */
+    .repairs-table td:nth-child(8) { grid-column: 2; grid-row: 5; justify-content: flex-end; }
+    
+    /* Adjust internal elements */
+    .repairs-client-avatar { width: 32px; height: 32px; font-size: 11px; }
+    .repairs-device { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
     .repairs-client-email { display: none; }
-    .repairs-client-avatar { display: none; }
 }

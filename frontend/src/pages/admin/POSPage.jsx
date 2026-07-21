@@ -56,6 +56,13 @@ export default function POSPage() {
 
     // Paginación y Carrito Móvil
     const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth > 900 ? 12 : 6);
+
+    useEffect(() => {
+        const handleResize = () => setItemsPerPage(window.innerWidth > 900 ? 12 : 6);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     const [showMobileCart, setShowMobileCart] = useState(false);
 
     // Reset de página al cambiar de modo
@@ -619,7 +626,7 @@ export default function POSPage() {
                     {mode === 'products' ? (
                         /* ── Products Tab ── */
                         filteredProducts.length > 0 ? (
-                            filteredProducts.slice((currentPage - 1) * 10, currentPage * 10).map(product => (
+                            filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(product => (
                                 <div
                                     key={product.id}
                                     className="pos-product-card"
@@ -656,7 +663,7 @@ export default function POSPage() {
                     ) : mode === 'services' ? (
                         /* ── Services Tab ── */
                         filteredServices.length > 0 ? (
-                            filteredServices.slice((currentPage - 1) * 10, currentPage * 10).map(service => (
+                            filteredServices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(service => (
                                 <div
                                     key={service.id}
                                     className="pos-service-card"
@@ -677,7 +684,7 @@ export default function POSPage() {
                     ) : mode === 'pending_sales' ? (
                         /* ── Pending Web Sales Tab ── */
                         pendingSales.length > 0 ? (
-                            pendingSales.slice((currentPage - 1) * 10, currentPage * 10).map(sale => {
+                            pendingSales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(sale => {
                                 const isLoaded = loadedPendingSaleId === sale.id;
                                 return (
                                     <div
@@ -765,7 +772,7 @@ export default function POSPage() {
                     ) : (
                         /* ── Repairs Tab ── */
                         billableRepairs.length > 0 ? (
-                            billableRepairs.slice((currentPage - 1) * 10, currentPage * 10).map(repair => {
+                            billableRepairs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(repair => {
                                 const isInCart = cart.some(i => i.key === `r-${repair.id}`);
                                 return (
                                     <div
@@ -831,26 +838,24 @@ export default function POSPage() {
                                      : mode === 'services' ? filteredServices.length
                                      : mode === 'pending_sales' ? pendingSales.length
                                      : billableRepairs.length;
-                    const totalPages = Math.ceil(listLength / 10);
+                    const totalPages = Math.ceil(listLength / itemsPerPage);
                     if (totalPages <= 1) return null;
                     return (
-                        <div className="pos-pagination" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-4)', padding: '12px', borderTop: '1px solid var(--color-border)', background: 'rgba(255, 255, 255, 0.01)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--sp-4)', marginTop: 'var(--sp-6)', marginBottom: 'var(--sp-4)' }}>
                             <button
-                                className="btn btn-secondary btn-sm"
+                                className="btn btn-secondary"
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                style={{ padding: '6px 12px', fontSize: '11px' }}
                             >
                                 Anterior
                             </button>
-                            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                            <span style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
                                 Página {currentPage} de {totalPages}
                             </span>
                             <button
-                                className="btn btn-secondary btn-sm"
+                                className="btn btn-secondary"
                                 disabled={currentPage === totalPages}
                                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                style={{ padding: '6px 12px', fontSize: '11px' }}
                             >
                                 Siguiente
                             </button>

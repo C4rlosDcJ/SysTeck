@@ -29,6 +29,16 @@ export default function InventoryPage() {
     const [filterCategory, setFilterCategory] = useState('');
     const [filterLowStock, setFilterLowStock] = useState(false);
 
+    // Paginación
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth > 900 ? 12 : 6);
+
+    useEffect(() => {
+        const handleResize = () => setItemsPerPage(window.innerWidth > 900 ? 12 : 6);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Modals
     const [showProductModal, setShowProductModal] = useState(false);
     const [showStockModal, setShowStockModal] = useState(false);
@@ -215,6 +225,14 @@ export default function InventoryPage() {
         const matchStock = !filterLowStock || p.stock <= p.min_stock;
         return matchSearch && matchCategory && matchStock;
     });
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const paginatedFiltered = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Reset page on search or filter
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, filterCategory, filterLowStock]);
 
     // Product CRUD
     const openNewProduct = () => {
@@ -455,7 +473,7 @@ export default function InventoryPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filtered.length === 0 ? (
+                        {paginatedFiltered.length === 0 ? (
                             <tr>
                                 <td colSpan="7">
                                     <div className="empty-state">
@@ -466,7 +484,7 @@ export default function InventoryPage() {
                                 </td>
                             </tr>
                         ) : (
-                            filtered.map(p => (
+                            paginatedFiltered.map(p => (
                                 <tr key={p.id}>
                                     <td><span className="font-mono" style={{ fontSize: 'var(--font-xs)', fontWeight: 600 }}>{p.sku || 'N/A'}</span></td>
                                     <td>
@@ -528,6 +546,29 @@ export default function InventoryPage() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Controles de Paginación */}
+            {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--sp-4)', marginTop: 'var(--sp-4)', marginBottom: 'var(--sp-4)' }}>
+                    <button 
+                        className="btn btn-secondary" 
+                        disabled={currentPage === 1} 
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    >
+                        Anterior
+                    </button>
+                    <span style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                        Página {currentPage} de {totalPages}
+                    </span>
+                    <button 
+                        className="btn btn-secondary" 
+                        disabled={currentPage === totalPages} 
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    >
+                        Siguiente
+                    </button>
+                </div>
+            )}
 
             {/* Product Modal */}
             {showProductModal && (

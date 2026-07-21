@@ -21,12 +21,18 @@ export default function AdminRepairs() {
 
     const [warrantyFilter, setWarrantyFilter] = useState('all');
 
-    const LIMIT = 20;
+    const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth > 900 ? 12 : 6);
+
+    useEffect(() => {
+        const handleResize = () => setItemsPerPage(window.innerWidth > 900 ? 12 : 6);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         fetchRepairs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [statusFilter, warrantyFilter, page]);
+    }, [statusFilter, warrantyFilter, page, itemsPerPage]);
 
     // Debounce search
     useEffect(() => {
@@ -38,7 +44,7 @@ export default function AdminRepairs() {
     const fetchRepairs = async () => {
         setLoading(true);
         try {
-            const params = { limit: LIMIT, page };
+            const params = { limit: itemsPerPage, page };
             if (statusFilter !== 'all') params.status = statusFilter;
             if (searchTerm.trim()) params.search = searchTerm.trim();
             if (warrantyFilter === 'warranties') {
@@ -49,8 +55,8 @@ export default function AdminRepairs() {
             }
             const data = await repairService.getAll(params);
             setRepairs(data.repairs || []);
-            setTotal(data.total || 0);
-            setTotalPages(Math.ceil((data.total || 0) / LIMIT));
+            setTotal(data.pagination?.total || 0);
+            setTotalPages(data.pagination?.totalPages || 1);
         } catch (err) {
             console.error('Error al cargar reparaciones:', err);
         } finally {
@@ -163,13 +169,13 @@ export default function AdminRepairs() {
                             <tbody>
                                 {repairs.map(repair => (
                                     <tr key={repair.id}>
-                                        <td>
+                                        <td data-label="Ticket">
                                             <span className="repairs-ticket">{repair.ticket_number}</span>
                                             {repair.parent_repair_id && (
                                                 <span style={{ marginLeft: '6px', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', fontSize: '9px', padding: '2px 6px', borderRadius: '3px', fontWeight: 600 }}>Garantía</span>
                                             )}
                                         </td>
-                                        <td>
+                                        <td data-label="Cliente">
                                             <div className="repairs-client">
                                                 <div className="repairs-client-avatar">
                                                     {repair.first_name?.charAt(0)}{repair.last_name?.charAt(0)}
@@ -180,18 +186,18 @@ export default function AdminRepairs() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-label="Dispositivo">
                                             <div className="repairs-device">
                                                 <span className="repairs-device-type">{repair.device_type_name}</span>
                                                 <span className="repairs-device-model">{repair.brand_name || repair.brand_other} · {repair.model}</span>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-label="Estado">
                                             <span className={`status-badge status-${repair.status}`}>
                                                 {STATUS_LABELS[repair.status]}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-label="Pago">
                                             {repair.payment_status === 'paid' ? (
                                                 <span className="badge text-xs bg-success-muted text-success">✓ Pagado</span>
                                             ) : repair.payment_status === 'partial' ? (
@@ -202,13 +208,13 @@ export default function AdminRepairs() {
                                                 <span className="text-muted text-xs">—</span>
                                             )}
                                         </td>
-                                        <td className="repairs-cost">
+                                        <td data-label="Total" className="repairs-cost">
                                             {formatCurrency(repair.total_cost)}
                                         </td>
-                                        <td className="repairs-date">
+                                        <td data-label="Fecha" className="repairs-date">
                                             {formatDate(repair.created_at)}
                                         </td>
-                                        <td>
+                                        <td data-label="Acciones">
                                             <Link
                                                 to={`/admin/reparaciones/${repair.id}`}
                                                 className="btn btn-ghost btn-icon"
@@ -225,21 +231,23 @@ export default function AdminRepairs() {
 
                     {/* ── Pagination ── */}
                     {totalPages > 1 && (
-                        <div className="pagination">
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--sp-4)', marginTop: 'var(--sp-6)', marginBottom: 'var(--sp-4)' }}>
                             <button
-                                className="btn btn-ghost btn-sm"
+                                className="btn btn-secondary"
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
                             >
-                                <ChevronLeft size={16} /> Anterior
+                                Anterior
                             </button>
-                            <span className="page-info">Página {page} de {totalPages}</span>
+                            <span style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                                Página {page} de {totalPages}
+                            </span>
                             <button
-                                className="btn btn-ghost btn-sm"
+                                className="btn btn-secondary"
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
                             >
-                                Siguiente <ChevronRight size={16} />
+                                Siguiente
                             </button>
                         </div>
                     )}

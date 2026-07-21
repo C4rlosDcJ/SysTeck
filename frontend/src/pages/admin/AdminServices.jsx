@@ -268,7 +268,13 @@ export default function AdminServices() {
     };
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6;
+    const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth > 900 ? 12 : 6);
+
+    useEffect(() => {
+        const handleResize = () => setItemsPerPage(window.innerWidth > 900 ? 12 : 6);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const filteredServices = services.filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

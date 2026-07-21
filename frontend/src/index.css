@@ -196,7 +196,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; border: none
 }
 
 @media (max-width: 900px) {
-  .main-content { margin-left: 0; padding-top: 56px; }
+  .main-content { margin-left: 0; padding-top: 56px; padding-bottom: 90px; }
 }
 
 /* =====================================================

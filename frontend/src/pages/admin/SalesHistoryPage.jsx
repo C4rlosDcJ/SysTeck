@@ -31,6 +31,13 @@ export default function SalesHistoryPage() {
     const [dateTo, setDateTo] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('');
     const [page, setPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth > 900 ? 12 : 6);
+
+    useEffect(() => {
+        const handleResize = () => setItemsPerPage(window.innerWidth > 900 ? 12 : 6);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Detail modal
     const [selectedSale, setSelectedSale] = useState(null);
@@ -42,12 +49,12 @@ export default function SalesHistoryPage() {
     useEffect(() => {
         loadSales();
         loadStats();
-    }, [page, dateFrom, dateTo, paymentMethod]);
+    }, [page, dateFrom, dateTo, paymentMethod, itemsPerPage]);
 
     const loadSales = async () => {
         setLoading(true);
         try {
-            const params = { page, limit: 20 };
+            const params = { page, limit: itemsPerPage };
             if (dateFrom) params.date_from = dateFrom;
             if (dateTo) params.date_to = dateTo;
             if (paymentMethod) params.payment_method = paymentMethod;
@@ -253,19 +260,19 @@ export default function SalesHistoryPage() {
 
                     {/* Pagination */}
                     {pagination.totalPages > 1 && (
-                        <div className="pagination">
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--sp-4)', marginTop: 'var(--sp-6)', marginBottom: 'var(--sp-4)' }}>
                             <button
-                                className="btn btn-secondary btn-sm"
+                                className="btn btn-secondary"
                                 disabled={page <= 1}
                                 onClick={() => setPage(p => p - 1)}
                             >
                                 Anterior
                             </button>
-                            <span className="page-info">
+                            <span style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
                                 Página {page} de {pagination.totalPages}
                             </span>
                             <button
-                                className="btn btn-secondary btn-sm"
+                                className="btn btn-secondary"
                                 disabled={page >= pagination.totalPages}
                                 onClick={() => setPage(p => p + 1)}
                             >
