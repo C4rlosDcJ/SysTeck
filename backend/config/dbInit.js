@@ -120,7 +120,8 @@ async function dbInit() {
         console.log(`[DB-INIT] Verificando columna "parent_repair_id" en tabla "repairs"...`);
         const [parentRepairCol] = await connection.query(`SHOW COLUMNS FROM repairs LIKE 'parent_repair_id'`);
         if (parentRepairCol.length === 0) {
-            await connection.query(`ALTER TABLE repairs ADD COLUMN parent_repair_id INT NULL, ADD CONSTRAINT fk_parent_repair FOREIGN KEY (parent_repair_id) REFERENCES repairs(id) ON DELETE SET NULL`);
+            await connection.query(`ALTER TABLE repairs ADD COLUMN parent_repair_id INT NULL`);
+            await connection.query(`ALTER TABLE repairs ADD CONSTRAINT fk_parent_repair FOREIGN KEY (parent_repair_id) REFERENCES repairs(id) ON DELETE SET NULL`);
             console.log(`[DB-INIT] Columna parent_repair_id añadida a repairs.`);
         }
 
@@ -194,7 +195,8 @@ async function dbInit() {
         try {
             const [brandIdCol] = await connection.query(`SHOW COLUMNS FROM services_catalog LIKE 'brand_id'`);
             if (brandIdCol.length === 0) {
-                await connection.query(`ALTER TABLE services_catalog ADD COLUMN brand_id INT NULL, ADD CONSTRAINT fk_services_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL`);
+                await connection.query(`ALTER TABLE services_catalog ADD COLUMN brand_id INT NULL`);
+                await connection.query(`ALTER TABLE services_catalog ADD CONSTRAINT fk_services_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL`);
                 console.log(`[DB-INIT] Columna brand_id añadida a la tabla services_catalog.`);
             }
         } catch (e) {
