@@ -17,7 +17,9 @@ import {
     ToggleLeft,
     CheckCircle,
     XCircle,
-    HelpCircle
+    HelpCircle,
+    Barcode,
+    Printer
 } from 'lucide-react';
 import './AdminServices.css';
 
@@ -35,6 +37,135 @@ export default function AdminServices() {
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({});
+    
+    // Barcode Printing States
+    const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+    const [barcodeItem, setBarcodeItem] = useState(null);
+    const [printCopies, setPrintCopies] = useState(1);
+
+    useEffect(() => {
+        if (showBarcodeModal && barcodeItem?.barcode) {
+            setTimeout(() => {
+                try {
+                    if (window.JsBarcode) {
+                        window.JsBarcode("#service-barcode-svg", barcodeItem.barcode, {
+                            format: "CODE128",
+                            lineColor: "#000000",
+                            width: 2,
+                            height: 60,
+                            displayValue: true,
+                            fontSize: 12
+                        });
+                    }
+                } catch (err) {
+                    console.error("Error rendering barcode:", err);
+                }
+            }, 100);
+        }
+    }, [showBarcodeModal, barcodeItem]);
+
+    const openBarcodeModal = (item) => {
+        setBarcodeItem(item);
+        setPrintCopies(1);
+        setShowBarcodeModal(true);
+    };
+
+    const handlePrintBarcodes = () => {
+        if (!barcodeItem?.barcode) return;
+        
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.left = '-600px';
+        document.body.appendChild(iframe);
+
+        const svgContent = document.getElementById('service-barcode-svg').outerHTML;
+        const productName = barcodeItem.name;
+        const price = servicesCatalog.formatCurrency(barcodeItem.base_price);
+
+        let labelsHtml = '';
+        for (let i = 0; i < printCopies; i++) {
+            labelsHtml += `
+                <div class="label-container">
+                    <div class="product-name">${productName}</div>
+                    <div class="barcode-wrapper">${svgContent}</div>
+                    <div class="price-tag">${price}</div>
+                </div>
+            `;
+        }
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`
+            <html>
+            <head>
+                <style>
+                    @page {
+                        size: auto;
+                        margin: 0mm;
+                    }
+                    body {
+                        font-family: 'Inter', -apple-system, sans-serif;
+                        margin: 0;
+                        padding: 10px;
+                        background: white;
+                        color: black;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 15px;
+                        align-items: center;
+                    }
+                    .label-container {
+                        width: 50mm;
+                        height: 30mm;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        border: 1px dashed #ccc;
+                        padding: 2mm;
+                        box-sizing: border-box;
+                        page-break-inside: avoid;
+                        text-align: center;
+                    }
+                    .product-name {
+                        font-size: 8px;
+                        font-weight: bold;
+                        max-width: 100%;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        margin-bottom: 2px;
+                    }
+                    .barcode-wrapper svg {
+                        width: 45mm;
+                        height: auto;
+                        max-height: 18mm;
+                    }
+                    .price-tag {
+                        font-size: 9px;
+                        font-weight: 800;
+                        margin-top: 2px;
+                    }
+                </style>
+            </head>
+            <body>
+                ${labelsHtml}
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(function() {
+                            window.parent.document.body.removeChild(window.frameElement);
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `);
+        doc.close();
+    };
 
     useEffect(() => {
         fetchData();
@@ -255,6 +386,9 @@ export default function AdminServices() {
                                                         <Smartphone size={10} /> {typeName}
                                                     </span>
                                                     <div className="service-card-actions">
+                                                        {item.barcode && (
+                                                            <button onClick={() => openBarcodeModal(item)} className="btn btn-icon btn-ghost" title="Imprimir Código de Barras"><Barcode size={14} /></button>
+                                                        )}
                                                         <button onClick={() => openModal(item)} className="btn btn-icon btn-ghost" title="Editar"><Edit size={14} /></button>
                                                         <button onClick={() => handleDelete(item.id)} className="btn btn-icon btn-ghost btn-danger" title="Eliminar"><Trash2 size={14} /></button>
                                                     </div>
@@ -365,9 +499,27 @@ export default function AdminServices() {
                                             <input type="number" name="base_price" className="input" value={formData.base_price || ''} onChange={handleChange} placeholder="0.00" />
                                         </div>
                                     </div>
-                                    <div className="input-group mt-sm">
-                                        <label>Tiempo Estimado de Entrega</label>
-                                        <input type="text" name="estimated_time" className="input" placeholder="Ej: 1-2 horas, 1 día hábil..." value={formData.estimated_time || ''} onChange={handleChange} />
+                                    <div className="form-row mt-sm">
+                                        <div className="input-group">
+                                            <label>Tiempo Estimado de Entrega</label>
+                                            <input type="text" name="estimated_time" className="input" placeholder="Ej: 1-2 horas, 1 día hábil..." value={formData.estimated_time || ''} onChange={handleChange} />
+                                        </div>
+                                        <div className="input-group">
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <label>Código de Barras</label>
+                                                <button
+                                                    type="button"
+                                                    style={{ background: 'none', color: 'var(--color-primary)', fontSize: '0.65rem', fontWeight: 600, padding: 0, cursor: 'pointer' }}
+                                                    onClick={() => {
+                                                        const generated = `9${Array.from({ length: 11 }, () => Math.floor(Math.random() * 10)).join('')}`;
+                                                        setFormData(prev => ({ ...prev, barcode: generated }));
+                                                    }}
+                                                >
+                                                    Generar
+                                                </button>
+                                            </div>
+                                            <input type="text" name="barcode" className="input" placeholder="Código de barras del servicio..." value={formData.barcode || ''} onChange={handleChange} />
+                                        </div>
                                     </div>
                                 </>
                             )}
@@ -385,6 +537,50 @@ export default function AdminServices() {
                                 <button type="submit" className="btn btn-primary"><Save size={18} /> Guardar Cambios</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Barcode Print Modal */}
+            {showBarcodeModal && barcodeItem && (
+                <div className="modal-overlay" onClick={() => setShowBarcodeModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Imprimir Códigos de Barra</h3>
+                            <button className="modal-close" onClick={() => setShowBarcodeModal(false)}><X size={16} /></button>
+                        </div>
+                        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)', padding: 'var(--sp-4)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#ffffff', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#000000', marginBottom: '5px', textAlign: 'center', display: 'block', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {barcodeItem.name}
+                                </span>
+                                <div style={{ background: '#ffffff', padding: '5px', display: 'flex', justifyContent: 'center' }}>
+                                    <svg id="service-barcode-svg"></svg>
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: 800, color: '#000000', marginTop: '5px' }}>
+                                    {servicesCatalog.formatCurrency(barcodeItem.base_price)}
+                                </span>
+                            </div>
+
+                            <div className="input-group">
+                                <label style={{ fontWeight: 600 }}>Número de copias a imprimir</label>
+                                <input
+                                    className="input"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={printCopies}
+                                    onChange={(e) => setPrintCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                                />
+                            </div>
+
+                            <div className="flex gap-sm" style={{ justifyContent: 'flex-end', marginTop: 'var(--sp-2)' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowBarcodeModal(false)}>Cerrar</button>
+                                <button className="btn btn-primary" onClick={handlePrintBarcodes} style={{ gap: '6px' }}>
+                                    <Printer size={15} /> Imprimir etiquetas
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

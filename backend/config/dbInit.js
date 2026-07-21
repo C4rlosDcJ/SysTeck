@@ -165,6 +165,30 @@ async function dbInit() {
             console.error(`[DB-INIT] Error al alterar la tabla sales:`, e.message);
         }
 
+        // 11. Asegurar que la columna is_unique exista en la tabla products
+        console.log(`[DB-INIT] Verificando columna "is_unique" en tabla "products"...`);
+        try {
+            const [isUniqueCol] = await connection.query(`SHOW COLUMNS FROM products LIKE 'is_unique'`);
+            if (isUniqueCol.length === 0) {
+                await connection.query(`ALTER TABLE products ADD COLUMN is_unique BOOLEAN DEFAULT FALSE`);
+                console.log(`[DB-INIT] Columna is_unique añadida a la tabla products.`);
+            }
+        } catch (e) {
+            console.error(`[DB-INIT] Error al verificar/alterar la tabla products:`, e.message);
+        }
+
+        // 12. Asegurar que la columna barcode exista en la tabla services_catalog
+        console.log(`[DB-INIT] Verificando columna "barcode" en tabla "services_catalog"...`);
+        try {
+            const [barcodeCol] = await connection.query(`SHOW COLUMNS FROM services_catalog LIKE 'barcode'`);
+            if (barcodeCol.length === 0) {
+                await connection.query(`ALTER TABLE services_catalog ADD COLUMN barcode VARCHAR(100) NULL`);
+                console.log(`[DB-INIT] Columna barcode añadida a la tabla services_catalog.`);
+            }
+        } catch (e) {
+            console.error(`[DB-INIT] Error al verificar/alterar la tabla services_catalog:`, e.message);
+        }
+
         console.log(`[DB-INIT] ✅ Base de datos "${dbName}" inicializada correctamente.`);
 
     } catch (error) {

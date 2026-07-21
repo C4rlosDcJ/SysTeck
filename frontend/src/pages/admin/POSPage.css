@@ -18,42 +18,6 @@
         height: auto;
         overflow: auto;
     }
-    
-    .pos-search-row {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: var(--sp-3) !important;
-    }
-
-    .pos-search-row .search-box {
-        width: 100%;
-    }
-
-    .pos-mode-toggle {
-        width: 100%;
-        display: flex !important;
-        overflow-x: auto !important;
-        overflow-y: hidden;
-        white-space: nowrap !important;
-        -webkit-overflow-scrolling: touch;
-        border-radius: var(--radius-md);
-        border: 1px solid var(--color-border);
-        background: var(--color-bg-input);
-    }
-
-    .pos-mode-toggle button {
-        flex: 1 0 auto !important;
-        width: auto !important;
-        justify-content: center;
-        padding: var(--sp-2) var(--sp-4) !important;
-        border: none !important;
-        border-right: 1px solid var(--color-border) !important;
-        border-radius: 0 !important;
-    }
-
-    .pos-mode-toggle button:last-child {
-        border-right: none !important;
-    }
 }
 
 /* ─── Left Panel: Catalog ─── */
@@ -137,7 +101,9 @@
     background: transparent;
 }
 
-.pos-categories::-webkit-scrollbar { height: 3px; }
+.pos-categories::-webkit-scrollbar {
+    height: 3px;
+}
 
 .pos-category-chip {
     padding: var(--sp-1) var(--sp-3);
@@ -224,31 +190,26 @@
 
 .pos-product-stock {
     font-size: 0.65rem;
-    font-weight: 700;
-    padding: 3px 8px;
+    font-weight: 600;
+    padding: 2px 6px;
     border-radius: var(--radius-sm);
     display: inline-flex;
     align-self: flex-start;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    border: 1px solid var(--color-border);
 }
 
 .pos-product-stock.in-stock {
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--color-text-secondary);
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
 }
 
 .pos-product-stock.low-stock {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--color-text);
-    border-color: var(--color-border-strong);
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
 }
 
 .pos-product-stock.no-stock {
-    background: rgba(255, 255, 255, 0.02);
-    color: var(--color-text-muted);
-    border-color: rgba(255, 255, 255, 0.05);
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
 }
 
 /* Service items in POS */
@@ -266,13 +227,13 @@
 }
 
 .pos-service-card:hover {
-    border-color: var(--color-text-secondary);
+    border-color: #8b5cf6;
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
 .pos-service-card .pos-product-price {
-    color: var(--color-text);
+    color: #a78bfa;
 }
 
 /* ─── Repair Cards in POS ─── */
@@ -288,10 +249,11 @@
     flex-direction: column;
     gap: var(--sp-2);
     position: relative;
+    border-left: 4px solid #3b82f6;
 }
 
 .pos-repair-card:hover {
-    border-color: var(--color-text-secondary);
+    border-color: #3b82f6;
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -314,7 +276,7 @@
     font-family: 'SF Mono', 'Fira Code', monospace;
     font-size: 0.7rem;
     font-weight: 700;
-    color: var(--color-text);
+    color: #60a5fa;
     display: flex;
     align-items: center;
     gap: 3px;
@@ -322,20 +284,30 @@
 
 .status-badge-mini {
     font-size: 0.6rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
     white-space: nowrap;
-    border: 1px solid var(--color-border);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--color-text-secondary);
 }
 
-.status-badge-mini.status-ready,
-.status-badge-mini.status-delivered {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--color-text);
-    border-color: var(--color-border-strong);
+.status-badge-mini.status-ready {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+}
+
+.status-badge-mini.status-quality_check {
+    background: rgba(6, 182, 212, 0.12);
+    color: #22d3ee;
+}
+
+.status-badge-mini.status-repairing {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+}
+
+.status-badge-mini.status-waiting_approval {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
 }
 
 .repair-card-pricing {
@@ -365,18 +337,15 @@
 }
 
 .repair-in-cart-badge {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 4px;
     font-size: 0.65rem;
-    font-weight: 700;
-    color: var(--color-text);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--color-border-strong);
-    padding: 3px 8px;
-    border-radius: var(--radius-sm);
-    margin-top: var(--sp-2);
-    align-self: flex-start;
+    font-weight: 600;
+    color: var(--color-success);
+    position: absolute;
+    top: var(--sp-2);
+    right: var(--sp-2);
 }
 
 /* Mode toggle badge (repair count) */
@@ -385,22 +354,20 @@
 }
 
 .mode-badge {
-    font-size: 0.6rem;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--color-text-secondary);
-    padding: 2px 6px;
+    font-size: 0.55rem;
+    background: var(--color-primary);
+    color: white;
+    padding: 0 4px;
     border-radius: var(--radius-full);
-    line-height: 1;
+    line-height: 1.4;
     font-weight: 700;
-    min-width: 16px;
+    min-width: 14px;
     text-align: center;
-    border: 1px solid var(--color-border);
 }
 
 .pos-mode-toggle button.active .mode-badge {
-    background: #000;
-    color: #fff;
-    border-color: #000;
+    background: white;
+    color: var(--color-primary);
 }
 
 /* Cart repair items */
@@ -442,36 +409,10 @@
 
 @media (max-width: 1100px) {
     .pos-cart {
-        position: fixed;
-        top: 0;
-        right: -100%;
-        width: 100%;
-        max-width: 420px;
-        height: 100% !important;
+        height: auto;
         max-height: none;
-        z-index: 1000;
-        border-left: 1px solid var(--color-border);
-        border-radius: 0;
-        transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        background: var(--color-bg);
-    }
-
-    .pos-cart.mobile-open {
-        right: 0;
-    }
-
-    .mobile-cart-close {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        color: var(--color-text-secondary);
-        cursor: pointer;
-    }
-
-    .pos-mobile-cart-badge {
-        display: flex !important;
+        border-left: none;
+        border-top: 1px solid var(--color-border);
     }
 }
 
@@ -492,8 +433,8 @@
 }
 
 .cart-count {
-    background: #fff;
-    color: #000;
+    background: var(--color-primary);
+    color: white;
     font-size: 0.65rem;
     padding: 2px 7px;
     border-radius: var(--radius-full);
@@ -573,11 +514,11 @@
     align-items: center;
     gap: var(--sp-2);
     padding: var(--sp-2) var(--sp-3);
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--color-border);
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.25);
     border-radius: var(--radius-md);
     font-size: var(--font-xs);
-    color: var(--color-text-secondary);
+    color: #60a5fa;
 }
 
 .repair-link-badge .ticket-num {
@@ -603,7 +544,9 @@
     gap: var(--sp-2);
 }
 
-.pos-cart-empty p { font-size: var(--font-sm); }
+.pos-cart-empty p {
+    font-size: var(--font-sm);
+}
 
 .cart-item {
     display: flex;
@@ -679,7 +622,9 @@
     background: none;
 }
 
-.cart-item-remove:hover { color: var(--color-error); }
+.cart-item-remove:hover {
+    color: var(--color-error);
+}
 
 /* Cart Footer / Totals */
 .pos-cart-footer {
@@ -755,43 +700,25 @@
 
 .cash-input-row {
     display: flex;
-    gap: var(--sp-4);
+    gap: var(--sp-2);
     align-items: center;
-    margin-bottom: var(--sp-4);
-    padding: var(--sp-3);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
+    margin-bottom: var(--sp-3);
 }
 
 .cash-input-row label {
-    font-size: var(--font-sm);
-    font-weight: 600;
+    font-size: var(--font-xs);
     color: var(--color-text-secondary);
     white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 
 .cash-input-row .input {
-    width: 140px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    padding: 8px 12px;
-    height: auto;
-    text-align: center;
+    width: 120px;
 }
 
 .change-display {
-    font-size: 1.05rem;
-    font-weight: 800;
+    font-size: var(--font-sm);
+    font-weight: 700;
     color: var(--color-success);
-    background: rgba(16, 185, 129, 0.08);
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    flex-grow: 1;
-    text-align: right;
 }
 
 .pos-checkout-btn {
@@ -868,8 +795,14 @@
     padding: 2px 0;
 }
 
-.receipt-item-desc { flex: 1; }
-.receipt-item-total { font-weight: 600; text-align: right; }
+.receipt-item-desc {
+    flex: 1;
+}
+
+.receipt-item-total {
+    font-weight: 600;
+    text-align: right;
+}
 
 .receipt-totals {
     margin-bottom: var(--sp-3);
@@ -903,20 +836,36 @@
     margin-top: var(--sp-4);
 }
 
-.receipt-actions button { flex: 1; }
+.receipt-actions button {
+    flex: 1;
+}
 
 /* Print styles */
 @media print {
-    body * { visibility: hidden; }
-    .receipt-content, .receipt-content * { visibility: visible; }
+    body * {
+        visibility: hidden;
+    }
+
+    .receipt-content,
+    .receipt-content * {
+        visibility: visible;
+    }
+
     .receipt-content {
         position: fixed;
-        left: 0; top: 0;
+        left: 0;
+        top: 0;
         width: 80mm;
         padding: 10px;
     }
-    .receipt-actions { display: none !important; }
-    .modal-overlay { background: white !important; }
+
+    .receipt-actions {
+        display: none !important;
+    }
+
+    .modal-overlay {
+        background: white !important;
+    }
 }
 
 /* ─── Toast notification ─── */
@@ -934,18 +883,10 @@
     box-shadow: var(--shadow-lg);
 }
 
-.pos-toast.success { background: var(--color-success); }
-.pos-toast.error { background: var(--color-error); }
+.pos-toast.success {
+    background: var(--color-success);
+}
 
-/* Ajuste responsivo para rejilla de productos en móvil */
-@media (max-width: 600px) {
-    .pos-products-grid {
-        grid-template-columns: 1fr 1fr !important;
-        gap: var(--sp-2) !important;
-        padding: var(--sp-3) !important;
-    }
-    
-    .pos-product-card {
-        padding: var(--sp-3) !important;
-    }
+.pos-toast.error {
+    background: var(--color-error);
 }

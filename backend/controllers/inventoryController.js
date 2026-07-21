@@ -154,10 +154,13 @@ exports.createProduct = async (req, res) => {
         // Generar SKU automático si no se proporciona
         const finalSku = sku || `PRD-${Date.now().toString(36).toUpperCase()}`;
 
+        // Generar Código de Barras automático si no se proporciona (código de 12 dígitos)
+        const finalBarcode = barcode || Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+
         const [result] = await db.query(
             `INSERT INTO products (sku, barcode, name, description, category_id, purchase_price, sale_price, stock, min_stock, is_unique)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [finalSku, barcode || null, name, description || null, category_id || null,
+            [finalSku, finalBarcode, name, description || null, category_id || null,
              purchase_price || 0, sale_price, stock || 0, min_stock || 5, is_unique ? 1 : 0]
         );
 

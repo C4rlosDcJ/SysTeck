@@ -499,6 +499,61 @@ export default function POSPage() {
                                     else if (mode === 'pending_sales') setPendingSearch(e.target.value);
                                     else setSearch(e.target.value);
                                 }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        const query = (mode === 'repairs' ? repairSearch : mode === 'pending_sales' ? pendingSearch : search).trim();
+                                        if (!query) return;
+
+                                        // 1. Buscar coincidencia exacta en productos (barcode o SKU)
+                                        const foundProduct = products.find(p => 
+                                            (p.barcode && p.barcode.toLowerCase() === query.toLowerCase()) || 
+                                            (p.sku && p.sku.toLowerCase() === query.toLowerCase())
+                                        );
+
+                                        if (foundProduct) {
+                                            addToCart(foundProduct, 'product');
+                                            setSearch('');
+                                            setRepairSearch('');
+                                            setPendingSearch('');
+                                            setMode('products');
+                                            showToast(`Producto agregado: ${foundProduct.name}`);
+                                            e.preventDefault();
+                                            return;
+                                        }
+
+                                        // 2. Buscar coincidencia exacta en servicios de catálogo (barcode)
+                                        const foundService = services.find(s => 
+                                            s.barcode && s.barcode.toLowerCase() === query.toLowerCase()
+                                        );
+
+                                        if (foundService) {
+                                            addToCart(foundService, 'service');
+                                            setSearch('');
+                                            setRepairSearch('');
+                                            setPendingSearch('');
+                                            setMode('services');
+                                            showToast(`Servicio agregado: ${foundService.name}`);
+                                            e.preventDefault();
+                                            return;
+                                        }
+
+                                        // 3. Buscar coincidencia exacta en reparaciones pendientes por cobrar (ticket_number)
+                                        const foundRepair = billableRepairs.find(r => 
+                                            r.ticket_number && r.ticket_number.toLowerCase() === query.toLowerCase()
+                                        );
+
+                                        if (foundRepair) {
+                                            addRepairToCart(foundRepair);
+                                            setSearch('');
+                                            setRepairSearch('');
+                                            setPendingSearch('');
+                                            setMode('repairs');
+                                            showToast(`Reparación cargada: ${foundRepair.ticket_number}`);
+                                            e.preventDefault();
+                                            return;
+                                        }
+                                    }
+                                }}
                                 id="pos-search"
                             />
                         </div>

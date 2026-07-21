@@ -131,8 +131,11 @@
 /* Mobile styles */
 @media (max-width: 900px) {
     .menu-toggle {
-        display: flex;
-        z-index: 101;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        z-index: 150;
+        color: var(--color-text-primary) !important;
     }
 
     .navbar-menu {

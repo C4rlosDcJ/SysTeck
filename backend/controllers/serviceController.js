@@ -57,13 +57,16 @@ exports.getById = async (req, res) => {
 // Crear servicio (admin)
 exports.create = async (req, res) => {
     try {
-        const { name, description, device_type_id, base_price, estimated_time } = req.body;
+        const { name, description, device_type_id, base_price, estimated_time, barcode } = req.body;
         const finalPrice = (base_price === '' || base_price === undefined) ? 0 : base_price;
+        
+        // Generar código de barras automático si no se proporciona (12 dígitos numéricos con prefijo 9 para servicios)
+        const finalBarcode = barcode || `9${Array.from({ length: 11 }, () => Math.floor(Math.random() * 10)).join('')}`;
 
         const [result] = await db.query(`
-      INSERT INTO services_catalog (name, description, device_type_id, base_price, estimated_time)
-      VALUES (?, ?, ?, ?, ?)
-    `, [name, description, device_type_id || null, finalPrice, estimated_time]);
+      INSERT INTO services_catalog (name, description, device_type_id, base_price, estimated_time, barcode)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [name, description, device_type_id || null, finalPrice, estimated_time, finalBarcode]);
 
         res.status(201).json({
             message: 'Servicio creado exitosamente.',
@@ -79,7 +82,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, device_type_id, base_price, estimated_time, is_active } = req.body;
+        const { name, description, device_type_id, base_price, estimated_time, is_active, barcode } = req.body;
         const finalPrice = (base_price === '' || base_price === undefined) ? 0 : base_price;
 
         await db.query(`
@@ -89,9 +92,10 @@ exports.update = async (req, res) => {
         device_type_id = ?,
         base_price = COALESCE(?, base_price),
         estimated_time = COALESCE(?, estimated_time),
-        is_active = COALESCE(?, is_active)
+        is_active = COALESCE(?, is_active),
+        barcode = COALESCE(?, barcode)
       WHERE id = ?
-    `, [name, description, device_type_id, finalPrice, estimated_time, is_active, id]);
+    `, [name, description, device_type_id, finalPrice, estimated_time, is_active, barcode, id]);
 
         res.json({ message: 'Servicio actualizado exitosamente.' });
     } catch (error) {

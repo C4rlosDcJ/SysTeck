@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
     Package, Plus, Search, Edit3, Trash2, X, ArrowDownCircle,
     ArrowUpCircle, AlertTriangle, DollarSign, PackageX, Boxes,
-    Tag, Palette, Check, FolderPlus
+    Tag, Palette, Check, FolderPlus, Barcode, Printer
 } from 'lucide-react';
 import { inventoryService } from '../../services/api';
 import { formatCurrency } from '../../utils/constants';
@@ -33,8 +33,11 @@ export default function InventoryPage() {
     const [showProductModal, setShowProductModal] = useState(false);
     const [showStockModal, setShowStockModal] = useState(false);
     const [showCategoryCreator, setShowCategoryCreator] = useState(false);
+    const [showBarcodeModal, setShowBarcodeModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [stockProduct, setStockProduct] = useState(null);
+    const [barcodeProduct, setBarcodeProduct] = useState(null);
+    const [printCopies, setPrintCopies] = useState(1);
 
     // Form state
     const [form, setForm] = useState({
@@ -57,6 +60,132 @@ export default function InventoryPage() {
     useEffect(() => {
         loadAll();
     }, []);
+
+    useEffect(() => {
+        if (showBarcodeModal && barcodeProduct?.barcode) {
+            // Esperar que el modal se renderice en el DOM
+            setTimeout(() => {
+                try {
+                    if (window.JsBarcode) {
+                        window.JsBarcode("#barcode-svg", barcodeProduct.barcode, {
+                            format: "CODE128",
+                            lineColor: "#000000",
+                            width: 2,
+                            height: 60,
+                            displayValue: true,
+                            fontSize: 12
+                        });
+                    }
+                } catch (err) {
+                    console.error("Error al renderizar código de barras:", err);
+                }
+            }, 100);
+        }
+    }, [showBarcodeModal, barcodeProduct]);
+
+    const openBarcodeModal = (product) => {
+        setBarcodeProduct(product);
+        setPrintCopies(1);
+        setShowBarcodeModal(true);
+    };
+
+    const handlePrintBarcodes = () => {
+        if (!barcodeProduct?.barcode) return;
+        
+        // Crear iframe oculto para impresión limpia de etiquetas
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.left = '-600px';
+        document.body.appendChild(iframe);
+
+        const svgContent = document.getElementById('barcode-svg').outerHTML;
+        const productName = barcodeProduct.name;
+        const price = formatCurrency(barcodeProduct.sale_price);
+
+        let labelsHtml = '';
+        for (let i = 0; i < printCopies; i++) {
+            labelsHtml += `
+                <div class="label-container">
+                    <div class="product-name">${productName}</div>
+                    <div class="barcode-wrapper">${svgContent}</div>
+                    <div class="price-tag">${price}</div>
+                </div>
+            `;
+        }
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`
+            <html>
+            <head>
+                <style>
+                    @page {
+                        size: auto;
+                        margin: 0mm;
+                    }
+                    body {
+                        font-family: 'Inter', -apple-system, sans-serif;
+                        margin: 0;
+                        padding: 10px;
+                        background: white;
+                        color: black;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 15px;
+                        align-items: center;
+                    }
+                    .label-container {
+                        width: 50mm;
+                        height: 30mm;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        border: 1px dashed #ccc;
+                        padding: 2mm;
+                        box-sizing: border-box;
+                        page-break-inside: avoid;
+                        text-align: center;
+                    }
+                    .product-name {
+                        font-size: 8px;
+                        font-weight: bold;
+                        max-width: 100%;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        margin-bottom: 2px;
+                    }
+                    .barcode-wrapper svg {
+                        width: 45mm;
+                        height: auto;
+                        max-height: 18mm;
+                    }
+                    .price-tag {
+                        font-size: 9px;
+                        font-weight: 800;
+                        margin-top: 2px;
+                    }
+                </style>
+            </head>
+            <body>
+                ${labelsHtml}
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(function() {
+                            window.parent.document.body.removeChild(window.frameElement);
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `);
+        doc.close();
+    };
 
     const loadAll = async () => {
         setLoading(true);
@@ -377,6 +506,11 @@ export default function InventoryPage() {
                                     </td>
                                     <td>
                                         <div className="product-actions">
+                                            {p.barcode && (
+                                                <button className="btn btn-ghost btn-icon" title="Imprimir Código de Barras" onClick={() => openBarcodeModal(p)}>
+                                                    <Barcode size={15} />
+                                                </button>
+                                            )}
                                             <button className="btn btn-ghost btn-icon" title="Agregar/Retirar stock" onClick={() => openStockModal(p)}>
                                                 <Boxes size={15} />
                                             </button>
@@ -415,7 +549,19 @@ export default function InventoryPage() {
                                     <input className="input" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="Ej. MIC-IPH15" />
                                 </div>
                                 <div className="input-group">
-                                    <label>Código de Barras</label>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <label>Código de Barras</label>
+                                        <button
+                                            type="button"
+                                            style={{ background: 'none', color: 'var(--color-primary)', fontSize: '0.65rem', fontWeight: 600, padding: 0, cursor: 'pointer' }}
+                                            onClick={() => {
+                                                const generated = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+                                                setForm({ ...form, barcode: generated });
+                                            }}
+                                        >
+                                            Generar
+                                        </button>
+                                    </div>
                                     <input className="input" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="Código de barras..." />
                                 </div>
                             </div>
@@ -646,6 +792,50 @@ export default function InventoryPage() {
                             >
                                 {saving ? 'Guardando...' : stockForm.type === 'in' ? 'Registrar Entrada' : 'Registrar Salida'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Barcode Print Modal */}
+            {showBarcodeModal && barcodeProduct && (
+                <div className="modal-overlay" onClick={() => setShowBarcodeModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Imprimir Códigos de Barra</h3>
+                            <button className="modal-close" onClick={() => setShowBarcodeModal(false)}><X size={16} /></button>
+                        </div>
+                        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)', padding: 'var(--sp-4)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#ffffff', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#000000', marginBottom: '5px', textAlign: 'center', display: 'block', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {barcodeProduct.name}
+                                </span>
+                                <div style={{ background: '#ffffff', padding: '5px', display: 'flex', justifyContent: 'center' }}>
+                                    <svg id="barcode-svg"></svg>
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: 800, color: '#000000', marginTop: '5px' }}>
+                                    {formatCurrency(barcodeProduct.sale_price)}
+                                </span>
+                            </div>
+
+                            <div className="input-group">
+                                <label style={{ fontWeight: 600 }}>Número de copias a imprimir</label>
+                                <input
+                                    className="input"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={printCopies}
+                                    onChange={(e) => setPrintCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                                />
+                            </div>
+
+                            <div className="flex gap-sm" style={{ justifyContent: 'flex-end', marginTop: 'var(--sp-2)' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowBarcodeModal(false)}>Cerrar</button>
+                                <button className="btn btn-primary" onClick={handlePrintBarcodes} style={{ gap: '6px' }}>
+                                    <Printer size={15} /> Imprimir etiquetas
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
