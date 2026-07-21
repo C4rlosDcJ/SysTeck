@@ -259,8 +259,18 @@ export const ThemeProvider = ({ children }) => {
     document.title = businessName;
   }, [businessName]);
 
+  // ── Persist business logo locally y actualizar favicon del navegador ──
   useEffect(() => {
     localStorage.setItem('businessLogo', businessLogo);
+    if (businessLogo) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = businessLogo;
+    }
   }, [businessLogo]);
 
   // ── Admin: persist visual settings to DB ──────────────────

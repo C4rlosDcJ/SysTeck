@@ -94,8 +94,8 @@ export default function SettingsPage() {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Convert to base64 with compressed quality
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                    // Convert to base64 with WebP compressed quality (optimal and lighter)
+                    const dataUrl = canvas.toDataURL('image/webp', 0.8);
                     setBusinessLogo(dataUrl);
                 };
                 img.src = event.target.result;
