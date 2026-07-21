@@ -140,6 +140,9 @@
     padding: var(--sp-4);
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border);
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .new-repair-customer-avatar {
@@ -152,12 +155,16 @@
     font-size: var(--font-md);
     display: flex; align-items: center; justify-content: center;
     letter-spacing: 1px;
+    flex-shrink: 0;
 }
 
 .customer-info {
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 180px;
+    word-break: break-all;
+    overflow: hidden;
 }
 .customer-info strong { font-size: var(--font-md); color: var(--color-text); }
 .customer-info span { font-size: var(--font-sm); color: var(--color-text-secondary); }
@@ -322,8 +329,8 @@
     padding-left: var(--sp-6);
 }
 .cost-row .highlight-input input {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+    border-color: var(--color-text-secondary);
+    color: var(--color-text);
     font-weight: 700;
 }
 
@@ -334,19 +341,19 @@
 }
 
 .total-row {
-    font-size: var(--font-lg);
+    font-size: var(--font-md);
     color: var(--color-text);
 }
-.total-row strong { color: var(--color-success); font-weight: 700; }
+.total-row strong { color: var(--color-text); font-weight: 700; }
 
 .pending-row {
-    font-size: var(--font-lg);
+    font-size: var(--font-md);
     padding: var(--sp-3);
     background: var(--color-bg-elevated);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--color-border);
 }
-.pending-row strong { color: var(--color-error); font-weight: 700; }
+.pending-row strong { color: var(--color-text); font-weight: 700; }
 
 .costs-actions {
     display: flex;
@@ -356,12 +363,51 @@
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
-    .repair-form-layout { grid-template-columns: 1fr; }
-    .repair-form-sidebar { position: static; }
+    .repair-form-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .repair-form-sidebar {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 100%;
+        max-width: 400px;
+        height: 100vh;
+        z-index: 1000;
+        background: var(--color-bg);
+        border-left: 1px solid var(--color-border);
+        box-shadow: var(--shadow-2xl);
+        overflow-y: auto;
+        padding: var(--sp-6);
+        transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .repair-form-sidebar.mobile-open {
+        right: 0;
+    }
+    
+    .mobile-costs-close {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+    }
+    
+    .mobile-costs-trigger-badge {
+        display: flex !important;
+    }
 }
 
 @media (max-width: 768px) {
     .new-repair-page { padding: var(--sp-4); }
     .form-grid { grid-template-columns: 1fr; }
     .form-card { padding: var(--sp-4); }
+    
+    .repair-form-sidebar {
+        max-width: 100%;
+    }
 }

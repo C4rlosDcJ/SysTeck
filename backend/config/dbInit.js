@@ -189,6 +189,18 @@ async function dbInit() {
             console.error(`[DB-INIT] Error al verificar/alterar la tabla services_catalog:`, e.message);
         }
 
+        // 13. Asegurar que la columna brand_id exista en la tabla services_catalog
+        console.log(`[DB-INIT] Verificando columna "brand_id" en tabla "services_catalog"...`);
+        try {
+            const [brandIdCol] = await connection.query(`SHOW COLUMNS FROM services_catalog LIKE 'brand_id'`);
+            if (brandIdCol.length === 0) {
+                await connection.query(`ALTER TABLE services_catalog ADD COLUMN brand_id INT NULL, ADD CONSTRAINT fk_services_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL`);
+                console.log(`[DB-INIT] Columna brand_id añadida a la tabla services_catalog.`);
+            }
+        } catch (e) {
+            console.error(`[DB-INIT] Error al verificar/alterar la tabla services_catalog para brand_id:`, e.message);
+        }
+
         console.log(`[DB-INIT] ✅ Base de datos "${dbName}" inicializada correctamente.`);
 
     } catch (error) {

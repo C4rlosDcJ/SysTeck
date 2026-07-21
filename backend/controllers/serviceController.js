@@ -3,12 +3,13 @@ const db = require('../config/database');
 // Obtener todos los servicios
 exports.getAll = async (req, res) => {
     try {
-        const { device_type_id, active_only } = req.query;
+        const { device_type_id, active_only, brand_id } = req.query;
 
         let query = `
-      SELECT s.*, dt.name as device_type_name
+      SELECT s.*, dt.name as device_type_name, b.name as brand_name
       FROM services_catalog s
       LEFT JOIN device_types dt ON s.device_type_id = dt.id
+      LEFT JOIN brands b ON s.brand_id = b.id
       WHERE 1=1
     `;
         const params = [];
@@ -19,6 +20,10 @@ exports.getAll = async (req, res) => {
         if (device_type_id) {
             query += ' AND (s.device_type_id = ? OR s.device_type_id IS NULL)';
             params.push(device_type_id);
+        }
+        if (brand_id) {
+            query += ' AND (s.brand_id = ? OR s.brand_id IS NULL)';
+            params.push(brand_id);
         }
 
         query += ' ORDER BY s.device_type_id, s.name';
@@ -37,9 +42,10 @@ exports.getById = async (req, res) => {
         const { id } = req.params;
 
         const [services] = await db.query(`
-      SELECT s.*, dt.name as device_type_name
+      SELECT s.*, dt.name as device_type_name, b.name as brand_name
       FROM services_catalog s
       LEFT JOIN device_types dt ON s.device_type_id = dt.id
+      LEFT JOIN brands b ON s.brand_id = b.id
       WHERE s.id = ?
     `, [id]);
 
@@ -57,16 +63,16 @@ exports.getById = async (req, res) => {
 // Crear servicio (admin)
 exports.create = async (req, res) => {
     try {
-        const { name, description, device_type_id, base_price, estimated_time, barcode } = req.body;
+        const { name, description, device_type_id, base_price, estimated_time, barcode, brand_id } = req.body;
         const finalPrice = (base_price === '' || base_price === undefined) ? 0 : base_price;
         
         // Generar código de barras automático si no se proporciona (12 dígitos numéricos con prefijo 9 para servicios)
         const finalBarcode = barcode || `9${Array.from({ length: 11 }, () => Math.floor(Math.random() * 10)).join('')}`;
 
         const [result] = await db.query(`
-      INSERT INTO services_catalog (name, description, device_type_id, base_price, estimated_time, barcode)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [name, description, device_type_id || null, finalPrice, estimated_time, finalBarcode]);
+      INSERT INTO services_catalog (name, description, device_type_id, base_price, estimated_time, barcode, brand_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [name, description, device_type_id || null, finalPrice, estimated_time, finalBarcode, brand_id || null]);
 
         res.status(201).json({
             message: 'Servicio creado exitosamente.',
@@ -82,7 +88,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, device_type_id, base_price, estimated_time, is_active, barcode } = req.body;
+        const { name, description, device_type_id, base_price, estimated_time, is_active, barcode, brand_id } = req.body;
         const finalPrice = (base_price === '' || base_price === undefined) ? 0 : base_price;
 
         await db.query(`
@@ -93,9 +99,10 @@ exports.update = async (req, res) => {
         base_price = COALESCE(?, base_price),
         estimated_time = COALESCE(?, estimated_time),
         is_active = COALESCE(?, is_active),
-        barcode = COALESCE(?, barcode)
+        barcode = COALESCE(?, barcode),
+        brand_id = ?
       WHERE id = ?
-    `, [name, description, device_type_id, finalPrice, estimated_time, is_active, barcode, id]);
+    `, [name, description, device_type_id, finalPrice, estimated_time, is_active, barcode, brand_id || null, id]);
 
         res.json({ message: 'Servicio actualizado exitosamente.' });
     } catch (error) {

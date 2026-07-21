@@ -96,7 +96,7 @@
 /* Premium Services Grid */
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--sp-5);
 }
 
@@ -204,7 +204,7 @@
 /* Device Types / Brands Layout */
 .types-brands-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--sp-4);
 }
 
@@ -315,9 +315,17 @@
         width: 100%;
     }
     .services-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--sp-3);
     }
     .types-brands-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--sp-3);
+    }
+    
+    /* Forzar que las filas del formulario sean de una columna en móvil */
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: var(--sp-3) !important;
     }
 }

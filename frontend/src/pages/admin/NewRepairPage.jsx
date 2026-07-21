@@ -35,6 +35,9 @@ export default function NewRepairPage() {
     const [searchingCustomers, setSearchingCustomers] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [_selectedService, setSelectedService] = useState(null);
+    const [serviceSearch, setServiceSearch] = useState('');
+    const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+    const [showMobileCosts, setShowMobileCosts] = useState(false);
 
     const [formData, setFormData] = useState({
         customer_id: '',
@@ -80,6 +83,15 @@ export default function NewRepairPage() {
 
     useEffect(() => {
         fetchInitialData();
+
+        // Cerrar dropdown de servicios si se hace click fuera
+        const closeDropdown = (e) => {
+            if (!e.target.closest('.service-search-container')) {
+                setShowServiceDropdown(false);
+            }
+        };
+        document.addEventListener('click', closeDropdown);
+        return () => document.removeEventListener('click', closeDropdown);
     }, []);
 
     const fetchInitialData = async () => {
@@ -134,10 +146,13 @@ export default function NewRepairPage() {
         const typeId = e.target.value;
         setFormData(prev => ({ ...prev, device_type_id: typeId, service_id: '' }));
         setSelectedService(null);
+        setServiceSearch('');
+        setShowServiceDropdown(false);
 
         if (typeId) {
             try {
                 const data = await servicesCatalog.getAll();
+                // Filtrar inicialmente por tipo de dispositivo
                 const filtered = data.filter(s => !s.device_type_id || s.device_type_id === parseInt(typeId));
                 setServices(filtered);
             } catch (error) {
@@ -147,6 +162,47 @@ export default function NewRepairPage() {
             setServices([]);
         }
     };
+
+    // Efecto para volver a filtrar o recargar servicios cuando cambie la marca en el formulario
+    useEffect(() => {
+        if (formData.device_type_id) {
+            const loadAndFilterServices = async () => {
+                try {
+                    const data = await servicesCatalog.getAll();
+                    let filtered = data.filter(s => !s.device_type_id || s.device_type_id === parseInt(formData.device_type_id));
+                    
+                    // Si hay una marca seleccionada
+                    if (formData.brand_id && formData.brand_id !== 'other') {
+                        const selectedBrandObj = brands.find(b => b.id.toString() === formData.brand_id.toString());
+                        if (selectedBrandObj) {
+                            const brandNameLower = selectedBrandObj.name.toLowerCase();
+                            // Filtrar servicios que mencionen la marca o que sean generales para esa categoría
+                            filtered = filtered.filter(s => {
+                                const serviceNameLower = s.name.toLowerCase();
+                                const serviceDescLower = (s.description || '').toLowerCase();
+                                return serviceNameLower.includes(brandNameLower) || 
+                                       serviceDescLower.includes(brandNameLower) ||
+                                       // Permitir también servicios genéricos que no especifican marcas de competidores
+                                       (!serviceNameLower.includes('iphone') && 
+                                        !serviceNameLower.includes('samsung') && 
+                                        !serviceNameLower.includes('motorola') && 
+                                        !serviceNameLower.includes('huawei') && 
+                                        !serviceNameLower.includes('xiaomi') && 
+                                        !serviceNameLower.includes('oppo'));
+                            });
+                        }
+                    }
+                    setServices(filtered);
+                } catch (error) {
+                    console.error('Error filtering services by brand:', error);
+                }
+            };
+            loadAndFilterServices();
+        } else {
+            setServices([]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.brand_id, formData.device_type_id, brands]);
 
     const handleImageSelect = (e) => {
         const files = Array.from(e.target.files);
@@ -166,14 +222,14 @@ export default function NewRepairPage() {
         });
     };
 
-    const handleServiceChange = (e) => {
-        const serviceId = e.target.value;
-        const service = services.find(s => s.id === parseInt(serviceId));
+    const selectService = (service) => {
         setSelectedService(service);
+        setServiceSearch(service ? `${service.name} - ${formatCurrency(service.base_price)}` : '');
+        setShowServiceDropdown(false);
 
         setFormData(prev => ({
             ...prev,
-            service_id: serviceId,
+            service_id: service ? service.id.toString() : '',
             service_requested: service?.name || '',
             labor_cost: service?.base_price || 0
         }));
@@ -472,12 +528,48 @@ export default function NewRepairPage() {
                             <h2>Detalle del Servicio</h2>
                         </div>
                         
-                        <div className="form-group mb-md">
+                        <div className="form-group mb-md service-search-container" style={{ position: 'relative' }}>
                             <label>Servicio Base</label>
-                            <select name="service_id" className="select" value={formData.service_id} onChange={handleServiceChange} disabled={!formData.device_type_id}>
-                                <option value="">Seleccionar servicio del catálogo...</option>
-                                {services.map(s => <option key={s.id} value={s.id}>{s.name} - {formatCurrency(s.base_price)}</option>)}
-                            </select>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder={formData.device_type_id ? "Buscar servicio por nombre..." : "Selecciona primero un tipo de equipo..."}
+                                    value={serviceSearch}
+                                    onChange={(e) => {
+                                        setServiceSearch(e.target.value);
+                                        setShowServiceDropdown(true);
+                                    }}
+                                    onFocus={() => setShowServiceDropdown(true)}
+                                    disabled={!formData.device_type_id}
+                                />
+                                {showServiceDropdown && formData.device_type_id && (
+                                    <div className="search-results" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, maxHeight: '200px', overflowY: 'auto' }}>
+                                        {services.filter(s => 
+                                            !serviceSearch || s.name.toLowerCase().includes(serviceSearch.split(' - ')[0].toLowerCase())
+                                        ).length === 0 ? (
+                                            <div style={{ padding: '10px', fontSize: '12px', color: 'var(--color-text-muted)', background: 'var(--color-bg-elevated)' }}>
+                                                No se encontraron servicios compatibles
+                                            </div>
+                                        ) : (
+                                            services.filter(s => 
+                                                !serviceSearch || s.name.toLowerCase().includes(serviceSearch.split(' - ')[0].toLowerCase())
+                                            ).map(s => (
+                                                <button
+                                                    key={s.id}
+                                                    type="button"
+                                                    className="search-item"
+                                                    onClick={() => selectService(s)}
+                                                    style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                                >
+                                                    <strong>{s.name}</strong>
+                                                    <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 700 }}>{formatCurrency(s.base_price)}</span>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="form-group mb-md">
@@ -513,11 +605,16 @@ export default function NewRepairPage() {
                 </div>
 
                 {/* ── Right Column: Sticky Costs summary ── */}
-                <div className="repair-form-sidebar">
+                <div className={`repair-form-sidebar ${showMobileCosts ? 'mobile-open' : ''}`}>
                     <div className="costs-summary-card">
-                        <div className="form-card-header">
-                            <DollarSign size={20} className="icon-success" />
-                            <h2>Presupuesto</h2>
+                        <div className="form-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="flex items-center gap-xs">
+                                <DollarSign size={20} className="icon-success" />
+                                <h2>Presupuesto</h2>
+                            </div>
+                            <button type="button" className="mobile-costs-close" onClick={() => setShowMobileCosts(false)} style={{ display: 'none', background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
                         </div>
                         
                         <div className="costs-inputs">
@@ -600,6 +697,32 @@ export default function NewRepairPage() {
                     </div>
                 </div>
             </form>
+
+            {/* Burbuja flotante de Presupuesto en Móvil */}
+            <button
+                type="button"
+                className="mobile-costs-trigger-badge"
+                onClick={() => setShowMobileCosts(true)}
+                style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    right: '96px',
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--color-primary)',
+                    color: 'var(--color-primary-contrast)',
+                    border: 'none',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                    cursor: 'pointer',
+                    display: 'none',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 999
+                }}
+            >
+                <DollarSign size={24} />
+            </button>
         </div>
     );
 }

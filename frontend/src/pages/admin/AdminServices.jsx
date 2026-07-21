@@ -176,12 +176,14 @@ export default function AdminServices() {
         setLoading(true);
         try {
             if (activeTab === 'services') {
-                const [sData, tData] = await Promise.all([
+                const [sData, tData, bData] = await Promise.all([
                     servicesCatalog.getAll(),
-                    servicesCatalog.getDeviceTypes()
+                    servicesCatalog.getDeviceTypes(),
+                    servicesCatalog.getBrands({ all: true })
                 ]);
                 setServices(sData || []);
                 setDeviceTypes(tData || []);
+                setBrands(bData || []);
             } else if (activeTab === 'types') {
                 const data = await servicesCatalog.getDeviceTypes({ all: true });
                 setDeviceTypes(data || []);
@@ -203,6 +205,7 @@ export default function AdminServices() {
                 name: '',
                 description: '',
                 device_type_id: '',
+                brand_id: '',
                 base_price: '',
                 estimated_time: '',
                 is_active: true
@@ -264,6 +267,9 @@ export default function AdminServices() {
         }
     };
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
     const filteredServices = services.filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (s.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
@@ -278,6 +284,20 @@ export default function AdminServices() {
     const filteredBrands = brands.filter(b =>
         b.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Calcular paginación sobre el array activo
+    let activeArray = [];
+    if (activeTab === 'services') activeArray = filteredServices;
+    else if (activeTab === 'types') activeArray = filteredTypes;
+    else if (activeTab === 'brands') activeArray = filteredBrands;
+
+    const totalPages = Math.ceil(activeArray.length / itemsPerPage);
+    const paginatedArray = activeArray.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Efecto para resetear paginación al buscar o cambiar de tab
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterType, activeTab]);
 
     return (
         <div className="admin-services-container">
@@ -355,7 +375,7 @@ export default function AdminServices() {
                     <>
                         {/* 1. Vista de Servicios (Cards) */}
                         {activeTab === 'services' && (
-                            filteredServices.length === 0 ? (
+                            paginatedArray.length === 0 ? (
                                 <div className="empty-state">
                                     <XCircle size={48} className="text-muted" />
                                     <h3>No se encontraron servicios</h3>
@@ -363,7 +383,7 @@ export default function AdminServices() {
                                 </div>
                             ) : (
                                 <div className="services-grid animate-fadeIn">
-                                    {filteredServices.map(item => {
+                                    {paginatedArray.map(item => {
                                         const typeName = deviceTypes.find(t => t.id === item.device_type_id)?.name || 'General (Todos)';
                                         return (
                                             <div key={item.id} className={`service-card ${!item.is_active ? 'inactive' : ''}`}>
@@ -402,7 +422,7 @@ export default function AdminServices() {
 
                         {/* 2. Vista de Tipos de Dispositivo (Chips Interactivos) */}
                         {activeTab === 'types' && (
-                            filteredTypes.length === 0 ? (
+                            paginatedArray.length === 0 ? (
                                 <div className="empty-state">
                                     <XCircle size={48} className="text-muted" />
                                     <h3>No se encontraron tipos de equipo</h3>
@@ -410,7 +430,7 @@ export default function AdminServices() {
                                 </div>
                             ) : (
                                 <div className="types-brands-grid animate-fadeIn">
-                                    {filteredTypes.map(item => (
+                                    {paginatedArray.map(item => (
                                         <div key={item.id} className={`catalogue-chip-card ${!item.is_active ? 'inactive' : ''}`}>
                                             <div className="chip-card-info">
                                                 <div className="chip-card-icon">
@@ -433,7 +453,7 @@ export default function AdminServices() {
 
                         {/* 3. Vista de Marcas (Chips Interactivos) */}
                         {activeTab === 'brands' && (
-                            filteredBrands.length === 0 ? (
+                            paginatedArray.length === 0 ? (
                                 <div className="empty-state">
                                     <XCircle size={48} className="text-muted" />
                                     <h3>No se encontraron marcas</h3>
@@ -441,7 +461,7 @@ export default function AdminServices() {
                                 </div>
                             ) : (
                                 <div className="types-brands-grid animate-fadeIn">
-                                    {filteredBrands.map(item => (
+                                    {paginatedArray.map(item => (
                                         <div key={item.id} className={`catalogue-chip-card ${!item.is_active ? 'inactive' : ''}`}>
                                             <div className="chip-card-info">
                                                 <div className="chip-card-icon">
@@ -460,6 +480,29 @@ export default function AdminServices() {
                                     ))}
                                 </div>
                             )
+                        )}
+
+                        {/* Controles de Paginación */}
+                        {totalPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--sp-4)', marginTop: 'var(--sp-6)' }}>
+                                <button 
+                                    className="btn btn-secondary" 
+                                    disabled={currentPage === 1} 
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                >
+                                    Anterior
+                                </button>
+                                <span style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                                    Página {currentPage} de {totalPages}
+                                </span>
+                                <button 
+                                    className="btn btn-secondary" 
+                                    disabled={currentPage === totalPages} 
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
                         )}
                     </>
                 )}
@@ -484,13 +527,22 @@ export default function AdminServices() {
                                         <label>Descripción del Servicio</label>
                                         <textarea name="description" className="input" rows="3" value={formData.description || ''} onChange={handleChange} placeholder="Detalla el alcance del servicio..."></textarea>
                                     </div>
-                                    <div className="form-row mt-sm">
+                                    <div className="form-row mt-sm" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-3)' }}>
                                         <div className="input-group">
                                             <label>Tipo de Equipo compatible</label>
                                             <select name="device_type_id" className="select" value={formData.device_type_id || ''} onChange={handleChange}>
-                                                <option value="">General (Todos los equipos)</option>
+                                                <option value="">General (Todos)</option>
                                                 {deviceTypes.map(t => (
                                                     <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Marca compatible</label>
+                                            <select name="brand_id" className="select" value={formData.brand_id || ''} onChange={handleChange}>
+                                                <option value="">General (Todas)</option>
+                                                {brands.map(b => (
+                                                    <option key={b.id} value={b.id}>{b.name}</option>
                                                 ))}
                                             </select>
                                         </div>
