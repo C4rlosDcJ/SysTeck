@@ -253,9 +253,10 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem('borderRadius', borderRadius);
   }, [borderRadius]);
 
-  // ── Persist business name locally ─────────────────────────
+  // ── Persist business name locally y actualizar título del navegador ──
   useEffect(() => {
     localStorage.setItem('businessName', businessName);
+    document.title = businessName;
   }, [businessName]);
 
   useEffect(() => {
