@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { publicService, orderService } from '../services/api';
 import {
     Wrench, Package, Search, ShoppingCart, X, Trash2,
-    Plus, Minus, Check, ChevronRight, Clock, Tag,
+    Plus, Minus, Check, ChevronRight, ChevronLeft, Clock, Tag,
     Smartphone, Laptop, Monitor, Gamepad2, Watch, Tablet,
     ShoppingBag, ArrowRight, Sparkles, Send
 } from 'lucide-react';
@@ -38,6 +38,21 @@ export default function CatalogSection({ embedded = false, showCartButton = true
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDeviceType, setFilterDeviceType] = useState(null);
     const [filterCategory, setFilterCategory] = useState(null);
+
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth > 900 ? 12 : 6);
+
+    useEffect(() => {
+        const handleResize = () => setItemsPerPage(window.innerWidth > 900 ? 12 : 6);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Reset pagination on filter or tab change
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm, filterDeviceType, filterCategory, activeTab]);
 
     // Cart
     const [cart, setCart] = useState(() => {
@@ -119,6 +134,12 @@ export default function CatalogSection({ embedded = false, showCartButton = true
             !(s.description || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
         return true;
     });
+
+    // Pagination calculations
+    const paginatedServices = filteredServices.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+    const paginatedProducts = products.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+    const totalServicesPages = Math.ceil(filteredServices.length / itemsPerPage);
+    const totalProductsPages = Math.ceil(products.length / itemsPerPage);
 
     // Cart functions
     const addToCart = useCallback((item, type) => {
@@ -287,13 +308,13 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                         </div>
                     )}
 
-                    {/* Global Big Search Bar */}
+                    {/* Global Big Search Bar & Tabs */}
                     <div className="catalog-search-global-wrap">
                         <div className="catalog-search-large">
                             <Search size={22} className="search-icon-large" />
                             <input
                                 type="text"
-                                placeholder="¿Qué estás buscando hoy? (ej. pantalla, display, mantenimiento...)"
+                                placeholder="¿Qué estás buscando hoy? (ej. pantalla...)"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
@@ -302,15 +323,15 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                                     <X size={18} />
                                 </button>
                             )}
+                            <button className="search-submit-btn">
+                                Buscar
+                            </button>
                         </div>
-                    </div>
-
-                    {/* Tabs - Only shown when NOT searching */}
-                    {searchTerm.trim() === '' && (
+                        
                         <div className="catalog-tabs">
                             <button
                                 className={`catalog-tab ${activeTab === 'services' ? 'active' : ''}`}
-                                onClick={() => { setActiveTab('services'); }}
+                                onClick={() => { setActiveTab('services'); setSearchTerm(''); }}
                             >
                                 <Wrench size={18} />
                                 Servicios
@@ -318,14 +339,14 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                             </button>
                             <button
                                 className={`catalog-tab ${activeTab === 'products' ? 'active' : ''}`}
-                                onClick={() => { setActiveTab('products'); }}
+                                onClick={() => { setActiveTab('products'); setSearchTerm(''); }}
                             >
                                 <Package size={18} />
                                 Productos
                                 <span className="tab-count">{products.length}</span>
                             </button>
                         </div>
-                    )}
+                    </div>
 
                     {/* Controls (Filters only) - Only shown when NOT searching */}
                     {searchTerm.trim() === '' && (
@@ -395,60 +416,83 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                                     Servicios Coincidentes ({filteredServices.length})
                                 </h4>
                                 {filteredServices.length > 0 ? (
-                                    <div className="catalog-grid">
-                                        {filteredServices.map(service => {
-                                            const DevIcon = DEVICE_ICON_MAP[service.device_type_icon?.toLowerCase()] || Wrench;
-                                            const inCart = isInCart(service.id, 'service');
-                                            return (
-                                                <div key={service.id} className="catalog-card">
-                                                    <div className="catalog-card-header">
-                                                        <div className="catalog-card-icon">
-                                                            <DevIcon size={22} />
-                                                        </div>
-                                                        {service.device_type_name && (
-                                                            <span className="catalog-card-badge badge-device">
-                                                                {service.device_type_name}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <h3>{service.name}</h3>
-                                                    <p className="card-description">{service.description || 'Servicio profesional de reparación'}</p>
-                                                    <div className="catalog-card-footer">
-                                                        <div className="catalog-price">
-                                                            {service.base_price > 0 && (
-                                                                <>
-                                                                    <span className="price-label">Desde</span>
-                                                                    {formatCurrency(service.base_price)}
-                                                                </>
-                                                            )}
-                                                            {service.estimated_time && (
-                                                                <span className="estimated-time">
-                                                                    <Clock size={12} />
-                                                                    {service.estimated_time}
+                                    <>
+                                        <div className="catalog-grid">
+                                            {paginatedServices.map(service => {
+                                                const DevIcon = DEVICE_ICON_MAP[service.device_type_icon?.toLowerCase()] || Wrench;
+                                                const inCart = isInCart(service.id, 'service');
+                                                return (
+                                                    <div key={service.id} className="catalog-card">
+                                                        <div className="catalog-card-header">
+                                                            <div className="catalog-card-icon">
+                                                                <DevIcon size={22} />
+                                                            </div>
+                                                            {service.device_type_name && (
+                                                                <span className="catalog-card-badge badge-device">
+                                                                    {service.device_type_name}
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        {service.base_price > 0 ? (
-                                                            <button
-                                                                className={`card-action-btn ${inCart ? '' : 'btn-outline-card'}`}
-                                                                onClick={() => inCart ? null : addToCart(service, 'service')}
-                                                                disabled={inCart}
-                                                            >
-                                                                {inCart ? <><Check size={16} /> Agregado</> : <><Plus size={16} /> Agregar</>}
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                className="card-action-btn btn-outline-card"
-                                                                onClick={() => navigate(isAuthenticated ? '/dashboard/nueva-cotizacion' : '/register')}
-                                                            >
-                                                                Cotizar <ChevronRight size={14} />
-                                                            </button>
-                                                        )}
+                                                        <h3>{service.name}</h3>
+                                                        <p className="card-description">{service.description || 'Servicio profesional de reparación'}</p>
+                                                        <div className="catalog-card-footer">
+                                                            <div className="catalog-price">
+                                                                {service.base_price > 0 && (
+                                                                    <>
+                                                                        <span className="price-label">Desde</span>
+                                                                        {formatCurrency(service.base_price)}
+                                                                    </>
+                                                                )}
+                                                                {service.estimated_time && (
+                                                                    <span className="estimated-time">
+                                                                        <Clock size={12} />
+                                                                        {service.estimated_time}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {service.base_price > 0 ? (
+                                                                <button
+                                                                    className={`card-action-btn ${inCart ? '' : 'btn-outline-card'}`}
+                                                                    onClick={() => inCart ? null : addToCart(service, 'service')}
+                                                                    disabled={inCart}
+                                                                >
+                                                                    {inCart ? <><Check size={16} /> Agregado</> : <><Plus size={16} /> Agregar</>}
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    className="card-action-btn btn-outline-card"
+                                                                    onClick={() => navigate(isAuthenticated ? '/dashboard/nueva-cotizacion' : '/register')}
+                                                                >
+                                                                    Cotizar <ChevronRight size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        {totalServicesPages > 1 && (
+                                            <div className="pagination-controls">
+                                                <button
+                                                    className="btn-pagination"
+                                                    disabled={page === 1}
+                                                    onClick={() => setPage(page - 1)}
+                                                >
+                                                    <ChevronLeft size={16} /> Anterior
+                                                </button>
+                                                <span className="pagination-info">
+                                                    Página {page} de {totalServicesPages}
+                                                </span>
+                                                <button
+                                                    className="btn-pagination"
+                                                    disabled={page === totalServicesPages}
+                                                    onClick={() => setPage(page + 1)}
+                                                >
+                                                    Siguiente <ChevronRight size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="catalog-empty-inline">
                                         <p>No se encontraron servicios que coincidan con tu búsqueda.</p>
@@ -528,60 +572,83 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                     ) : (
                         activeTab === 'services' ? (
                             filteredServices.length > 0 ? (
-                                <div className="catalog-grid">
-                                    {filteredServices.map(service => {
-                                        const DevIcon = DEVICE_ICON_MAP[service.device_type_icon?.toLowerCase()] || Wrench;
-                                        const inCart = isInCart(service.id, 'service');
-                                        return (
-                                            <div key={service.id} className="catalog-card">
-                                                <div className="catalog-card-header">
-                                                    <div className="catalog-card-icon">
-                                                        <DevIcon size={22} />
-                                                    </div>
-                                                    {service.device_type_name && (
-                                                        <span className="catalog-card-badge badge-device">
-                                                            {service.device_type_name}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <h3>{service.name}</h3>
-                                                <p className="card-description">{service.description || 'Servicio profesional de reparación'}</p>
-                                                <div className="catalog-card-footer">
-                                                    <div className="catalog-price">
-                                                        {service.base_price > 0 && (
-                                                            <>
-                                                                <span className="price-label">Desde</span>
-                                                                {formatCurrency(service.base_price)}
-                                                            </>
-                                                        )}
-                                                        {service.estimated_time && (
-                                                            <span className="estimated-time">
-                                                                <Clock size={12} />
-                                                                {service.estimated_time}
+                                <>
+                                    <div className="catalog-grid">
+                                        {paginatedServices.map(service => {
+                                            const DevIcon = DEVICE_ICON_MAP[service.device_type_icon?.toLowerCase()] || Wrench;
+                                            const inCart = isInCart(service.id, 'service');
+                                            return (
+                                                <div key={service.id} className="catalog-card">
+                                                    <div className="catalog-card-header">
+                                                        <div className="catalog-card-icon">
+                                                            <DevIcon size={22} />
+                                                        </div>
+                                                        {service.device_type_name && (
+                                                            <span className="catalog-card-badge badge-device">
+                                                                {service.device_type_name}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {service.base_price > 0 ? (
-                                                        <button
-                                                            className={`card-action-btn ${inCart ? '' : 'btn-outline-card'}`}
-                                                            onClick={() => inCart ? null : addToCart(service, 'service')}
-                                                            disabled={inCart}
-                                                        >
-                                                            {inCart ? <><Check size={16} /> Agregado</> : <><Plus size={16} /> Agregar</>}
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            className="card-action-btn btn-outline-card"
-                                                            onClick={() => navigate(isAuthenticated ? '/dashboard/nueva-cotizacion' : '/register')}
-                                                        >
-                                                            Cotizar <ChevronRight size={14} />
-                                                        </button>
-                                                    )}
+                                                    <h3>{service.name}</h3>
+                                                    <p className="card-description">{service.description || 'Servicio profesional de reparación'}</p>
+                                                    <div className="catalog-card-footer">
+                                                        <div className="catalog-price">
+                                                            {service.base_price > 0 && (
+                                                                <>
+                                                                    <span className="price-label">Desde</span>
+                                                                    {formatCurrency(service.base_price)}
+                                                                </>
+                                                            )}
+                                                            {service.estimated_time && (
+                                                                <span className="estimated-time">
+                                                                    <Clock size={12} />
+                                                                    {service.estimated_time}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {service.base_price > 0 ? (
+                                                            <button
+                                                                className={`card-action-btn ${inCart ? '' : 'btn-outline-card'}`}
+                                                                onClick={() => inCart ? null : addToCart(service, 'service')}
+                                                                disabled={inCart}
+                                                            >
+                                                                {inCart ? <><Check size={16} /> Agregado</> : <><Plus size={16} /> Agregar</>}
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                className="card-action-btn btn-outline-card"
+                                                                onClick={() => navigate(isAuthenticated ? '/dashboard/nueva-cotizacion' : '/register')}
+                                                            >
+                                                                Cotizar <ChevronRight size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {totalServicesPages > 1 && (
+                                        <div className="pagination-controls">
+                                            <button
+                                                className="btn-pagination"
+                                                disabled={page === 1}
+                                                onClick={() => setPage(page - 1)}
+                                            >
+                                                <ChevronLeft size={16} /> Anterior
+                                            </button>
+                                            <span className="pagination-info">
+                                                Página {page} de {totalServicesPages}
+                                            </span>
+                                            <button
+                                                className="btn-pagination"
+                                                disabled={page === totalServicesPages}
+                                                onClick={() => setPage(page + 1)}
+                                            >
+                                                Siguiente <ChevronRight size={16} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             ) : (
                                 <div className="catalog-empty">
                                     <div className="catalog-empty-icon"><Wrench size={28} /></div>
@@ -591,61 +658,84 @@ export default function CatalogSection({ embedded = false, showCartButton = true
                             )
                         ) : (
                             products.length > 0 ? (
-                                <div className="catalog-grid">
-                                    {products.map(product => {
-                                        const inCart = isInCart(product.id, 'product');
-                                        const isOutOfStock = product.stock <= 0;
-                                        const isLowStock = product.stock > 0 && product.stock <= 5;
-                                        return (
-                                            <div
-                                                key={product.id}
-                                                className={`catalog-card ${isOutOfStock ? 'out-of-stock-card' : ''} ${isLowStock ? 'low-stock-card' : ''}`}
-                                                style={{ '--card-accent': product.category_color || 'var(--color-primary)' }}
+                                <>
+                                    <div className="catalog-grid">
+                                        {paginatedProducts.map(product => {
+                                            const inCart = isInCart(product.id, 'product');
+                                            const isOutOfStock = product.stock <= 0;
+                                            const isLowStock = product.stock > 0 && product.stock <= 5;
+                                            return (
+                                                <div
+                                                    key={product.id}
+                                                    className={`catalog-card ${isOutOfStock ? 'out-of-stock-card' : ''} ${isLowStock ? 'low-stock-card' : ''}`}
+                                                    style={{ '--card-accent': product.category_color || 'var(--color-primary)' }}
+                                                >
+                                                    {(isOutOfStock || isLowStock) && (
+                                                        <div className="catalog-card-status-banner">
+                                                            {isOutOfStock ? 'No Disponible (Agotado)' : `¡Bajo Stock! Quedan ${product.stock}`}
+                                                        </div>
+                                                    )}
+                                                    <div className="catalog-card-header">
+                                                        <div className="catalog-card-icon">
+                                                            <Package size={22} />
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                            {product.category_name && (
+                                                                <span className="catalog-card-badge badge-category">
+                                                                    {product.category_name}
+                                                                </span>
+                                                            )}
+                                                            {product.is_unique ? (
+                                                                <span className="catalog-card-badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-strong)' }}>
+                                                                    Pieza Única
+                                                                </span>
+                                                            ) : (
+                                                                <span className={`catalog-card-badge badge-stock ${isOutOfStock ? 'out' : isLowStock ? 'low' : ''}`}>
+                                                                    {isOutOfStock ? 'Agotado' : isLowStock ? `Quedan ${product.stock}` : 'En stock'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <h3>{product.name}</h3>
+                                                    <p className="card-description">{product.description || 'Producto disponible'}</p>
+                                                    <div className="catalog-card-footer">
+                                                        <div className="catalog-price">
+                                                            {formatCurrency(product.sale_price)}
+                                                        </div>
+                                                        <button
+                                                            className={`card-action-btn ${inCart ? '' : isOutOfStock ? 'btn-out-of-stock' : 'btn-outline-card'}`}
+                                                            onClick={() => inCart || isOutOfStock ? null : addToCart(product, 'product')}
+                                                            disabled={inCart || isOutOfStock}
+                                                        >
+                                                            {inCart ? <><Check size={16} /> Agregado</> : isOutOfStock ? <><X size={16} /> Agotado</> : <><ShoppingCart size={16} /> Agregar</>}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {totalProductsPages > 1 && (
+                                        <div className="pagination-controls">
+                                            <button
+                                                className="btn-pagination"
+                                                disabled={page === 1}
+                                                onClick={() => setPage(page - 1)}
                                             >
-                                                {(isOutOfStock || isLowStock) && (
-                                                    <div className="catalog-card-status-banner">
-                                                        {isOutOfStock ? 'No Disponible (Agotado)' : `¡Bajo Stock! Quedan ${product.stock}`}
-                                                    </div>
-                                                )}
-                                                <div className="catalog-card-header">
-                                                    <div className="catalog-card-icon">
-                                                        <Package size={22} />
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                                        {product.category_name && (
-                                                            <span className="catalog-card-badge badge-category">
-                                                                {product.category_name}
-                                                            </span>
-                                                        )}
-                                                        {product.is_unique ? (
-                                                            <span className="catalog-card-badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-strong)' }}>
-                                                                Pieza Única
-                                                            </span>
-                                                        ) : (
-                                                            <span className={`catalog-card-badge badge-stock ${isOutOfStock ? 'out' : isLowStock ? 'low' : ''}`}>
-                                                                {isOutOfStock ? 'Agotado' : isLowStock ? `Quedan ${product.stock}` : 'En stock'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <h3>{product.name}</h3>
-                                                <p className="card-description">{product.description || 'Producto disponible'}</p>
-                                                <div className="catalog-card-footer">
-                                                    <div className="catalog-price">
-                                                        {formatCurrency(product.sale_price)}
-                                                    </div>
-                                                    <button
-                                                        className={`card-action-btn ${inCart ? '' : isOutOfStock ? 'btn-out-of-stock' : 'btn-outline-card'}`}
-                                                        onClick={() => inCart || isOutOfStock ? null : addToCart(product, 'product')}
-                                                        disabled={inCart || isOutOfStock}
-                                                    >
-                                                        {inCart ? <><Check size={16} /> Agregado</> : isOutOfStock ? <><X size={16} /> Agotado</> : <><ShoppingCart size={16} /> Agregar</>}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                                <ChevronLeft size={16} /> Anterior
+                                            </button>
+                                            <span className="pagination-info">
+                                                Página {page} de {totalProductsPages}
+                                            </span>
+                                            <button
+                                                className="btn-pagination"
+                                                disabled={page === totalProductsPages}
+                                                onClick={() => setPage(page + 1)}
+                                            >
+                                                Siguiente <ChevronRight size={16} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             ) : (
                                 <div className="catalog-empty">
                                     <div className="catalog-empty-icon"><Package size={28} /></div>

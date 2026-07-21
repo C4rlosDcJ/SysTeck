@@ -16,6 +16,7 @@
 - **Cotizaciones Inteligentes:** Solicita presupuestos detallados con carga de imágenes de los dispositivos.
 - **Seguimiento en Tiempo Real:** Consulta el progreso de tus dispositivos mediante número de ticket.
 - **Notificaciones Automáticas:** Mantente informado en cada etapa del proceso.
+- **Tienda y Catálogo Público:** Buscador unificado con filtros avanzados, paginación dinámica y vista consolidada de servicios y productos disponibles.
 
 ### Panel Administrativo y Módulos de Control
 - **Gestión de Reparaciones:** Control total del ciclo de vida del equipo (Recibido -> Diagnóstico -> Reparando -> Listo).
