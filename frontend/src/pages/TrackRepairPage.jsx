@@ -3,11 +3,13 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Search, Smartphone, Package, ChevronLeft, Calendar, FileText, Settings, User, Phone, CheckCircle, Clock, Tag, CreditCard, Shield, AlertTriangle, ListTodo } from 'lucide-react';
 import { publicService } from '../services/api';
 import Navbar from '../components/Navbar';
+import { useTheme } from '../context/ThemeContext';
 import './TrackRepairPage.css';
 
 function TrackRepairPage() {
     const location = useLocation();
     const navigate = useNavigate();
+    const { businessName } = useTheme();
     
     const [ticketId, setTicketId] = useState(new URLSearchParams(location.search).get('ticketId') || '');
     const [result, setResult] = useState(null);
@@ -697,7 +699,8 @@ function TrackRepairPage() {
                     <div className="footer-content">
                         <div className="footer-brand">
                             <div className="footer-logo">
-                                <span>Sys<span className="text-primary">-Teck</span></span>
+                                <Wrench size={24} className="text-primary" />
+                                <span>{businessName || 'SysTeck'}</span>
                             </div>
                             <p>Servicio técnico profesional para todos tus dispositivos electrónicos.</p>
                         </div>
@@ -717,7 +720,7 @@ function TrackRepairPage() {
                         </div>
                     </div>
                     <div className="footer-bottom">
-                        <p>© 2026 SysTeck. Todos los derechos reservados.</p>
+                        <p>© {new Date().getFullYear()} {businessName || 'SysTeck'}. Todos los derechos reservados.</p>
                     </div>
                 </div>
             </footer>

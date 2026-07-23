@@ -98,7 +98,7 @@ export default function RegisterPage() {
                             )}
                             <span className="logo-text">{renderBusinessName()}</span>
                         </div>
-                        <h1>Únete a Sys-Teck</h1>
+                        <h1>Únete a {businessName || 'Sys-Teck'}</h1>
                         <p>Crea tu cuenta y obtén acceso a todas las ventajas de nuestro servicio de reparación</p>
                         <div className="auth-features">
                             <div className="feature">

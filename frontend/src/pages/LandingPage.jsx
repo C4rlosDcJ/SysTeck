@@ -80,7 +80,8 @@ export default function LandingPage() {
         contactEmail,
         defaultWarrantyDays,
         landingServices,
-        landingTestimonials
+        landingTestimonials,
+        businessName
     } = useTheme();
     const navigate = useNavigate();
     const [quickTicket, setQuickTicket] = useState('');
@@ -376,8 +377,8 @@ export default function LandingPage() {
                     <div className="footer-content">
                         <div className="footer-brand">
                             <div className="footer-logo">
-                                <Wrench size={22} />
-                                <span>Sys<span className="text-primary">-Teck</span></span>
+                                <Wrench size={24} className="text-primary" />
+                                <span>{businessName || 'SysTeck'}</span>
                             </div>
                             <p>Servicio técnico profesional para todos tus dispositivos electrónicos.</p>
                         </div>
@@ -397,7 +398,7 @@ export default function LandingPage() {
                         </div>
                     </div>
                     <div className="footer-bottom">
-                        <p>© 2026 SysTeck. Todos los derechos reservados.</p>
+                        <p>© {new Date().getFullYear()} {businessName || 'SysTeck'}. Todos los derechos reservados.</p>
                     </div>
                 </div>
             </footer>

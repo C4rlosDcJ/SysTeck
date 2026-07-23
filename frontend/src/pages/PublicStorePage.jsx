@@ -1,10 +1,12 @@
 import Navbar from '../components/Navbar';
 import CatalogSection from '../components/CatalogSection';
-import { ShoppingBag, ArrowRight } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import './PublicStorePage.css';
 
 export default function PublicStorePage() {
+    const { businessName } = useTheme();
     return (
         <div className="public-store-page">
             <Navbar />
@@ -20,7 +22,8 @@ export default function PublicStorePage() {
                     <div className="footer-content">
                         <div className="footer-brand">
                             <div className="footer-logo">
-                                <span>Sys<span className="text-primary">-Teck</span></span>
+                                <Wrench size={24} className="text-primary" />
+                                <span>{businessName || 'SysTeck'}</span>
                             </div>
                             <p>Servicio técnico profesional para todos tus dispositivos electrónicos.</p>
                         </div>
@@ -40,7 +43,7 @@ export default function PublicStorePage() {
                         </div>
                     </div>
                     <div className="footer-bottom">
-                        <p>© 2026 SysTeck. Todos los derechos reservados.</p>
+                        <p>© {new Date().getFullYear()} {businessName || 'SysTeck'}. Todos los derechos reservados.</p>
                     </div>
                 </div>
             </footer>
