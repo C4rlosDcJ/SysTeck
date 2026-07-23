@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Search, Smartphone, Package, ChevronLeft, Calendar, FileText, Settings, User, Phone, CheckCircle, Clock, Tag, CreditCard, Shield, AlertTriangle, ListTodo } from 'lucide-react';
+import { Search, Smartphone, Package, ChevronLeft, Calendar, FileText, Settings, User, Phone, CheckCircle, Clock, Tag, CreditCard, Shield, AlertTriangle, ListTodo, Wrench } from 'lucide-react';
 import { publicService } from '../services/api';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../context/ThemeContext';
